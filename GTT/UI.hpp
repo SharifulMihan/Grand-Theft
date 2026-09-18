@@ -281,10 +281,16 @@ inline void drawGameOverScreen() {
 	iRectangle(404, 274, 392, 312);
 
 	iSetColor(255, 60, 60);
-	iText(490, 530, "HEIST FAILED!", GLUT_BITMAP_TIMES_ROMAN_24);
-
-	iSetColor(200, 200, 210);
-	iText(460, 490, "You were caught by security!", GLUT_BITMAP_HELVETICA_12);
+	if (currentLevel == 3) {
+		iText(495, 530, "CHASE ENDED!", GLUT_BITMAP_TIMES_ROMAN_24);
+		iSetColor(200, 200, 210);
+		iText(445, 490, "Traffic or the police stopped your getaway.", GLUT_BITMAP_HELVETICA_12);
+	}
+	else {
+		iText(490, 530, "HEIST FAILED!", GLUT_BITMAP_TIMES_ROMAN_24);
+		iSetColor(200, 200, 210);
+		iText(460, 490, "You were caught by security!", GLUT_BITMAP_HELVETICA_12);
+	}
 
 	// Draw button images
 	gameOverRestartBtn.draw();

@@ -11,6 +11,7 @@
 #include "Checkpoint.hpp"
 #include "lvl1.hpp"
 #include "lvl2.hpp"
+#include "lvl3.hpp"
 #include "UI.hpp"
 #include "MainMenu.hpp"
 #include "MenuPage.hpp"
@@ -18,15 +19,22 @@
 // Global position sync for parallax background
 int PlayerX_For_Parallax = 0;
 
-// Current active level (1 or 2)
+// Current active level (1, 2, or 3)
 int currentLevel = 1;
 
 // Level 2 background image
 int lvl2BgImage = 0;
 
+// Level 3 vehicle and road images
+int level3RoadImage = 0;
+int level3PlayerCarImage = 0;
+int level3PoliceBikeImage = 0;
+int level3TrafficImages[6] = { 0 };
+
 // Initialize levels
 void lvl1Initialize();
 void lvl2Initialize();
+void lvl3Initialize();
 
 // Starts a level fresh from the beginning spawn point
 void startFreshLevel(int levelNum) {
@@ -36,6 +44,9 @@ void startFreshLevel(int levelNum) {
 	}
 	else if (levelNum == 2) {
 		lvl2Initialize();
+	}
+	else if (levelNum == 3) {
+		lvl3Initialize();
 	}
 	currentGameState = STATE_PLAYING;
 }
@@ -136,16 +147,19 @@ void iDraw()
 	}
 
 	if (currentGameState == STATE_PAUSE_MENU) {
-		if (currentLevel == 2) {
+		if (currentLevel == 3) {
+			drawLevel3();
+		}
+		else if (currentLevel == 2) {
 			drawLevel2();
 		}
 		else {
 			drawLevel1();
 		}
-		playerMovements();
+		if (currentLevel != 3) playerMovements();
 		drawParticles();
 		drawFloatingTexts();
-		drawHUD();
+		if (currentLevel != 3) drawHUD();
 		drawPauseMenu();
 		return;
 	}
@@ -153,13 +167,16 @@ void iDraw()
 	if (isGameOver) {
 		applyScreenShake();
 
-		if (currentLevel == 2) {
+		if (currentLevel == 3) {
+			drawLevel3();
+		}
+		else if (currentLevel == 2) {
 			drawLevel2();
 		}
 		else {
 			drawLevel1();
 		}
-		playerMovements();
+		if (currentLevel != 3) playerMovements();
 		drawParticles();
 
 		resetScreenShake();
@@ -175,13 +192,16 @@ void iDraw()
 
 	applyScreenShake();
 
-	if (currentLevel == 2) {
+	if (currentLevel == 3) {
+		drawLevel3();
+	}
+	else if (currentLevel == 2) {
 		drawLevel2();
 	}
 	else {
 		drawLevel1();
 	}
-	playerMovements();
+	if (currentLevel != 3) playerMovements();
 
 	drawParticles();
 	drawFloatingTexts();
@@ -190,7 +210,7 @@ void iDraw()
 
 	drawAlarmOverlay(isCountdownActive);
 
-	drawHUD();
+	if (currentLevel != 3) drawHUD();
 	drawUIMessage();
 }
 
@@ -385,6 +405,16 @@ void fixedUpdate()
 	updateParticles();
 	updateShake();
 	updateFloatingTexts();
+
+	// Level 3 uses a top-down vehicle controller rather than the platformer
+	// character, and keeps all chase state inside lvl3.hpp.
+	if (currentLevel == 3) {
+		if (updateLevel3Logic()) {
+			isGameOver = true;
+			GameController.triggerPlayerDeath();
+		}
+		return;
+	}
 
 	if (isGameOver || isLevelComplete) {
 		return;
@@ -615,6 +645,22 @@ void lvl2Initialize() {
 	playLevel2Music();
 }
 
+// Level 3 initialization
+void lvl3Initialize() {
+	currentLevel = 3;
+	clearParticles();
+	resetShake();
+	initFloatingTexts();
+	resetScore();
+	countdownTimer = 0;
+	isCountdownActive = false;
+	stopAlarmSounds();
+	GameController.stopVibration();
+	level3InitializeGame();
+	showUIMessage("PURSUIT ACTIVE: dodge traffic and keep ahead of the police bikes!", 240);
+	playLevel2Music();
+}
+
 void iLoadAllImages() {
 	loadCharacter();
 
@@ -628,10 +674,20 @@ void iLoadAllImages() {
 	backBtnImage = iLoadImage("Images/Buttons/backBtn.png");
 	level1Btn = iLoadImage("Images/Buttons/level1Btn.png");
 	level2Btn = iLoadImage("Images/Buttons/level2Btn.png");
+	level3Btn = iLoadImage("Images/Buttons/level3Btn.png");
 
 	redImage = iLoadImage("Images/red.png");
 	levelOne = iLoadImage("Images/Background/LevelOne.png");
 	lvl2BgImage = iLoadImage("Images/Background/bgLvl2.png");
+	level3RoadImage = iLoadImage("Images/Cars/Road.png");
+	level3PlayerCarImage = iLoadImage("Images/Cars/MyCar.png");
+	level3PoliceBikeImage = iLoadImage("Images/Cars/PoliceBike.png");
+	level3TrafficImages[0] = iLoadImage("Images/Cars/car_red.png");
+	level3TrafficImages[1] = iLoadImage("Images/Cars/car_blue.png");
+	level3TrafficImages[2] = iLoadImage("Images/Cars/minibus_yellow.png");
+	level3TrafficImages[3] = iLoadImage("Images/Cars/minibus_white.png");
+	level3TrafficImages[4] = iLoadImage("Images/Cars/bike_blue.png");
+	level3TrafficImages[5] = iLoadImage("Images/Cars/PoliceCar.png");
 	
 	menubackgroundImage = iLoadImage("Images/Background/MenuBackground.png");
 	backgroundImage = iLoadImage("Images/Background/Background.png");
