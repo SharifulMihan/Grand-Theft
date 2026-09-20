@@ -32,6 +32,10 @@ inline void initAudio() {
 	mciSendString("open \"Sound//jump.mp3\" alias jumpsound", NULL, 0, NULL);
 	mciSendString("open \"Sound//hover.mp3\" alias hoversound", NULL, 0, NULL);
 	mciSendString("open \"Sound//click.mp3\" alias clicksound", NULL, 0, NULL);
+	
+	// Pre-load effect sounds to reduce delay
+	mciSendString("open \"Sound//point.mp3\" type mpegvideo alias pointSound", NULL, 0, NULL);
+	mciSendString("open \"Sound//bomb.mp3\" type mpegvideo alias bombSound", NULL, 0, NULL);
 }
 
 // Ensures SoundOn and SoundOff UI images are loaded
@@ -61,6 +65,7 @@ inline void stopLevelMusic() {
 inline void playLevel1Music() {
 	stopLevelMusic();
 	if (!isSoundOn) return;
+	mciSendString("seek level1song to start", NULL, 0, NULL); // Seek to beginning
 	mciSendString("play level1song repeat", NULL, 0, NULL);
 	setMusicVolume("level1song", 1000);
 }
@@ -69,6 +74,7 @@ inline void playLevel1Music() {
 inline void playLevel2Music() {
 	stopLevelMusic();
 	if (!isSoundOn) return;
+	mciSendString("seek level2song to start", NULL, 0, NULL); // Seek to beginning
 	mciSendString("play level2song repeat", NULL, 0, NULL);
 	setMusicVolume("level2song", 1000);
 }
@@ -76,7 +82,10 @@ inline void playLevel2Music() {
 // Resumes or plays the current level's background music if sound is enabled
 inline void playCurrentLevelMusic() {
 	if (!isSoundOn) return;
-	if (currentLevel == 2) {
+	if (currentLevel == 3) {
+		playLevel2Music(); // Level 3 uses level 2 music
+	}
+	else if (currentLevel == 2) {
 		playLevel2Music();
 	}
 	else {
@@ -107,7 +116,14 @@ inline bool handleSoundButtonClick(int mx, int my) {
 // Decreases the currently active level's music volume to 60% for the level complete screen
 inline void reduceMusicVolumeForLevelComplete() {
 	if (!isSoundOn) return;
-	const char* alias = (currentLevel == 2) ? "level2song" : "level1song";
+	const char* alias;
+	if (currentLevel == 3) {
+		alias = "level2song"; // Level 3 uses level 2 music
+	} else if (currentLevel == 2) {
+		alias = "level2song";
+	} else {
+		alias = "level1song";
+	}
 	char cmd[64];
 	sprintf_s(cmd, sizeof(cmd), "play %s repeat", alias);
 	mciSendString(cmd, NULL, 0, NULL);

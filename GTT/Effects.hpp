@@ -30,7 +30,7 @@ struct Particle {
 	double rotSpeed;      // Rotation speed per frame
 };
 
-const int MAX_PARTICLES = 300;
+const int MAX_PARTICLES = 150; // Reduced from 300 to improve performance
 static Particle particles[MAX_PARTICLES];
 static int particleCount = 0;
 
@@ -98,7 +98,7 @@ inline void addParticle(Particle p) {
 // --- EMITTER PRESETS ---
 
 // 1. Dust Particles (spawned when player lands or runs)
-inline void spawnDustParticles(double x, double y, int count = 6) {
+inline void spawnDustParticles(double x, double y, int count = 3) { // Reduced from 6 to 3
 	for (int i = 0; i < count; i++) {
 		Particle p;
 		p.x = x + (rand() % 20 - 10);
@@ -145,7 +145,7 @@ inline void spawnKeySparkles(double x, double y) {
 }
 
 // 3. Coin Burst (burst of shiny coins when lootbox is opened)
-inline void spawnCoinBurst(double x, double y, int count = 18) {
+inline void spawnCoinBurst(double x, double y, int count = 10) { // Reduced from 18 to 10
 	for (int i = 0; i < count; i++) {
 		Particle p;
 		p.x = x;
@@ -171,7 +171,7 @@ inline void spawnCoinBurst(double x, double y, int count = 18) {
 }
 
 // 4. Explosion Smoke (when player hits bomb or laser)
-inline void spawnExplosionSmoke(double x, double y, int count = 25) {
+inline void spawnExplosionSmoke(double x, double y, int count = 15) { // Reduced from 25 to 15
 	for (int i = 0; i < count; i++) {
 		Particle p;
 		p.x = x;
@@ -267,7 +267,7 @@ struct FloatingText {
 	bool active;
 };
 
-const int MAX_FLOATING_TEXTS = 10;
+const int MAX_FLOATING_TEXTS = 5; // Reduced from 10 to improve performance
 static FloatingText floatingTexts[MAX_FLOATING_TEXTS];
 
 inline void initFloatingTexts() {

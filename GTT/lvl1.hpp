@@ -13,6 +13,10 @@ using namespace std;
 extern int mat[720][1200];
 extern int PlayerX_For_Parallax;
 extern int laserImage;
+extern int platformLvl3HoriImage;
+extern int platformLvl3VertiImage;
+extern int platformSubLvl3HoriImage;
+extern int platformSubLvl3VertiImage;
 
 // Custom Checkpoint Coordinates for Level 1 (Modify these X and Y values)
 int lvl1CheckpointX = 200;
@@ -32,7 +36,14 @@ struct Platform {
 	}
 
 	void draw() {
-		int defaultImg = (currentLevel == 2) ? platformLvl2Image : platformLvl1Image;
+		int defaultImg;
+		if (currentLevel == 3) {
+			defaultImg = platformLvl3HoriImage;
+		} else if (currentLevel == 2) {
+			defaultImg = platformLvl2Image;
+		} else {
+			defaultImg = platformLvl1Image;
+		}
 		if (defaultImg <= 0) defaultImg = platformImage;
 
 		int imgToUse = (imagePtr != NULL && *imagePtr > 0 && imagePtr != &platformImage) ? *imagePtr : defaultImg;

@@ -15,15 +15,11 @@ using namespace std;
 // AUDIO SYSTEM
 // ============================================================================
 inline void playPointSound() {
-	mciSendString("close pointSound", NULL, 0, NULL);
-	mciSendString("open \"Sound/point.mp3\" type mpegvideo alias pointSound", NULL, 0, NULL);
-	mciSendString("play pointSound", NULL, 0, NULL);
+	mciSendString("play pointSound from 0", NULL, 0, NULL);
 }
 
 inline void playBombSound() {
-	mciSendString("close bombSound", NULL, 0, NULL);
-	mciSendString("open \"Sound/bomb.mp3\" type mpegvideo alias bombSound", NULL, 0, NULL);
-	mciSendString("play bombSound", NULL, 0, NULL);
+	mciSendString("play bombSound from 0", NULL, 0, NULL);
 }
 
 // ============================================================================

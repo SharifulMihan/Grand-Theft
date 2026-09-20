@@ -5,6 +5,8 @@
 
 extern int bompImage;
 extern int cutterImages[3]; // Updated to reference the 3-frame animation array[cite: 5]
+extern int closedGateImage;
+extern int openedGateImage;
 
 // laser 
 struct Laser {
@@ -229,26 +231,12 @@ struct TimedGate {
 
 	void draw() {
 		if (!isOpen) {
-			// Solid red barrier with gold warning border (DANGER - DO NOT TOUCH)
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glColor4f(0.85f, 0.08f, 0.08f, 0.95f);
-			iFilledRectangle(x, y, w, h);
-			// Gold warning stripes
-			glColor4f(1.0f, 0.85f, 0.0f, 0.90f);
-			iRectangle(x, y, w, h);
-			iRectangle(x + 2, y + 2, w - 4, h - 4);
-			glDisable(GL_BLEND);
+			// Draw closed gate image
+			iShowImage(x, y, w, h, closedGateImage);
 		}
 		else {
-			// Faint green outline only -- gate is passable
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glColor4f(0.0f, 1.0f, 0.25f, 0.20f);
-			iFilledRectangle(x, y, w, h);
-			glColor4f(0.0f, 1.0f, 0.25f, 0.55f);
-			iRectangle(x, y, w, h);
-			glDisable(GL_BLEND);
+			// Draw opened gate image
+			iShowImage(x, y, w, h, openedGateImage);
 		}
 	}
 

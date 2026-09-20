@@ -34,6 +34,8 @@ extern int laserImage;
 extern int platformImage;
 extern int platformLvl1Image;
 extern int platformLvl2Image;
+extern int platformLvl3HoriImage;
+extern int platformLvl3VertiImage;
 extern int liftPlatformImage;
 extern int redSwitchImage;
 extern int greenSwitchImage;
@@ -47,6 +49,9 @@ extern int restartBtnImage;
 extern int menuBtnImage;
 extern int soundOnImage;
 extern int soundOffImage;
+extern int portalImage;
+extern int closedGateImage;
+extern int openedGateImage;
 extern bool isSoundOn;
 
 // Menu Button Images (Assign loaded image IDs to these variables)
@@ -70,13 +75,19 @@ extern int currentLevel;
 
 // Level 2 background image
 extern int lvl2BgImage;
+// Level 3 background image
+extern int lvl3BgImage;
 
 // Forward declarations for level initialization
 void lvl1Initialize();
 void lvl2Initialize();
+void lvl3Initialize();
 
 inline void restartCurrentLevel() {
-	if (currentLevel == 2) {
+	if (currentLevel == 3) {
+		lvl3Initialize();
+	}
+	else if (currentLevel == 2) {
 		lvl2Initialize();
 	}
 	else {

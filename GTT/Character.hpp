@@ -14,6 +14,12 @@ const int moveSpeed = 2;
 const int climbSpeed = 2;
 const int animSpeed = 2;
 
+// External gravity reversal flag
+extern bool reversedGravity;
+
+// External matrix for collision detection
+extern int mat[720][1200];
+
 // player class
 class Character {
 public:
@@ -82,16 +88,41 @@ public:
 	void jump() {
 		if (!isJumping && !isOnStair) {
 			this->isJumping = true;
-			this->vy = 7.2f;
+			// Reverse jump direction based on gravity
+			if (reversedGravity) {
+				this->vy = -7.2f; // Jump downward when gravity is reversed
+			} else {
+				this->vy = 7.2f; // Normal jump upward
+			}
 			playJumpSound();
-			// Initial jump dust
-			spawnDustParticles(this->x + playerSize / 2, this->y, 4);
+			// Initial jump dust (reduced from 4 to 2 particles)
+			spawnDustParticles(this->x + playerSize / 2, this->y, 2);
 		}
 	}
 
 	void climbUp() {
 		if (isOnStair) {
-			this->y += climbSpeed;
+			int newY;
+			if (reversedGravity) {
+				// In reversed gravity, climbing up means going toward the ceiling (upward)
+				newY = this->y - climbSpeed;
+			} else {
+				// Normal gravity, climbing up means going away from ground (upward)
+				newY = this->y + climbSpeed;
+			}
+			
+			// Check if we would hit a platform while climbing up
+			int midX = this->x + (playerSize / 2);
+			int checkY = newY + playerSize / 2;
+			
+			// Check if new position would be inside a platform
+			if (checkY >= 0 && checkY < 720 && midX >= 0 && midX < 1200) {
+				if (mat[checkY][midX] == 1) {
+					// Stop at platform edge
+					return;
+				}
+			}
+			this->y = newY;
 			this->isClimbing = true;
 			this->isJumping = false;
 			this->vy = 0;
@@ -100,12 +131,27 @@ public:
 
 	void climbDown(int groundY) {
 		if (isOnStair) {
-			if (this->y > groundY) {
-				this->y -= climbSpeed;
-				if (this->y < groundY) {
-					this->y = groundY;
+			int newY;
+			if (reversedGravity) {
+				// In reversed gravity, climbing down means going toward the floor (downward)
+				newY = this->y + climbSpeed;
+			} else {
+				// Normal gravity, climbing down means going toward the ground
+				newY = this->y - climbSpeed;
+			}
+			
+			// Check if we would hit a platform while climbing down
+			int midX = this->x + (playerSize / 2);
+			int checkY = newY + playerSize / 2;
+			
+			// Check if new position would be inside a platform
+			if (checkY >= 0 && checkY < 720 && midX >= 0 && midX < 1200) {
+				if (mat[checkY][midX] == 1) {
+					// Stop at platform edge
+					return;
 				}
 			}
+			this->y = newY;
 			this->isClimbing = true;
 			this->isJumping = false;
 			this->vy = 0;
@@ -117,31 +163,130 @@ public:
 		if (this->isOnStair) {
 			this->isJumping = false;
 			this->vy = 0;
-			if (this->y < groundY) {
-				this->y = groundY;
+			if (reversedGravity) {
+				// In reversed gravity, ensure player is below ground (ceiling)
+				if (this->y > groundY) {
+					this->y = groundY;
+				}
+			} else {
+				// In normal gravity, ensure player is above ground
+				if (this->y < groundY) {
+					this->y = groundY;
+				}
 			}
 			return;
 		}
 
 		if (this->isJumping) {
-			this->y += (int)this->vy;
-			this->vy += this->gravity;
-
-			if (this->vy <= 0 && this->y <= groundY) {
-				this->y = groundY;
-				this->isJumping = false;
-				this->vy = 0;
-				// Landing dust effect
-				spawnDustParticles(this->x + playerSize / 2, this->y, 6);
+			// Check for platform collision before moving
+			int nextY = this->y + (int)this->vy;
+			int midX = this->x + (playerSize / 2);
+			
+			// Check if movement would pass through a platform
+			bool wouldHitPlatform = false;
+			int platformY = 0;
+			
+			if (reversedGravity) {
+				// In reversed gravity, check for platforms above (head collision)
+				if (this->vy > 0) { // Moving upward
+					for (int i = this->y + playerSize; i <= nextY + playerSize && i < 720; i++) {
+						if (mat[i][midX] == 1) {
+							wouldHitPlatform = true;
+							platformY = i;
+							break;
+						}
+					}
+				}
+				// Check for platforms below (feet collision)
+				else if (this->vy < 0) { // Moving downward
+					for (int i = this->y; i >= nextY && i >= 0; i--) {
+						if (mat[i][midX] == 1) {
+							wouldHitPlatform = true;
+							platformY = i;
+							break;
+						}
+					}
+				}
+			} else {
+				// In normal gravity, check for platforms above (head collision)
+				if (this->vy > 0) { // Moving upward
+					for (int i = this->y + playerSize; i <= nextY + playerSize && i < 720; i++) {
+						if (mat[i][midX] == 1) {
+							wouldHitPlatform = true;
+							platformY = i;
+							break;
+						}
+					}
+				}
+				// Check for platforms below (feet collision)
+				else if (this->vy < 0) { // Moving downward
+					for (int i = this->y; i >= nextY && i >= 0; i--) {
+						if (mat[i][midX] == 1) {
+							wouldHitPlatform = true;
+							platformY = i;
+							break;
+						}
+					}
+				}
+			}
+			
+			// If hitting a platform, stop at the collision point
+			if (wouldHitPlatform) {
+				if (reversedGravity) {
+					if (this->vy > 0) { // Hit platform from below
+						this->y = platformY - playerSize;
+						this->isJumping = false;
+						this->vy = 0;
+						spawnDustParticles(this->x + playerSize / 2, this->y + playerSize, 3);
+					} else { // Hit platform from above
+						this->y = platformY + playerSize;
+						this->vy = 0;
+					}
+				} else {
+					if (this->vy > 0) { // Hit platform from below
+						this->y = platformY - playerSize;
+						this->vy = -1;
+					} else { // Hit platform from above (landing)
+						this->y = platformY;
+						this->isJumping = false;
+						this->vy = 0;
+						spawnDustParticles(this->x + playerSize / 2, this->y, 3);
+					}
+				}
+			} else {
+				// No collision, apply normal movement
+				this->y = nextY;
+				this->vy += this->gravity;
 			}
 		}
 		else {
-			if (this->y > groundY) {
-				this->y -= 3;
-				if (this->y < groundY) {
+			// When not jumping, handle falling based on gravity direction
+			if (reversedGravity) {
+				// Reversed gravity: fall upward to ceiling (platform from below)
+				// Only fall if there's space above the player
+				if (this->y + playerSize < groundY - 5) {
+					this->y += 3;
+					if (this->y + playerSize > groundY) {
+						this->y = groundY - playerSize;
+						// Landing dust effect
+						spawnDustParticles(this->x + playerSize / 2, this->y + playerSize, 2);
+					}
+				} else {
+					// Keep player positioned on platform
+					this->y = groundY - playerSize;
+				}
+			} else {
+				// Normal gravity: fall downward to ground
+				if (this->y > groundY + 5) {
+					this->y -= 3;
+					if (this->y < groundY) {
+						this->y = groundY;
+						// Landing dust effect
+						spawnDustParticles(this->x + playerSize / 2, this->y, 2);
+					}
+				} else {
+					// Keep player positioned on ground
 					this->y = groundY;
-					// Landing dust effect
-					spawnDustParticles(this->x + playerSize / 2, this->y, 5);
 				}
 			}
 		}
@@ -220,6 +365,13 @@ void handlePlayerInput(int groundY) {
 		bool climbUpRequested = isKeyPressed('w') || isKeyPressed('W') || isSpecialKeyPressed(GLUT_KEY_UP) || GameController.isUp();
 		bool climbDownRequested = isKeyPressed('s') || isKeyPressed('S') || isSpecialKeyPressed(GLUT_KEY_DOWN) || GameController.isDown();
 
+		// Reverse up/down controls when gravity is reversed
+		if (reversedGravity) {
+			bool temp = climbUpRequested;
+			climbUpRequested = climbDownRequested;
+			climbDownRequested = temp;
+		}
+
 		if (climbUpRequested) {
 			Player.climbUp();
 		}
@@ -235,23 +387,32 @@ void handlePlayerInput(int groundY) {
 
 // character Drawing 
 void playerMovements() {
+	int imageToDraw;
+	
+	// Determine which image to use based on state
 	if (Player.isJumping) {
-		if (Player.isFacingRight)
-			iShowImage(Player.x, Player.y, playerSize - 8, playerSize, Player.jumpForwardImage);
-		else
-			iShowImage(Player.x, Player.y, playerSize - 8, playerSize, Player.jumpBackwardImage);
+		imageToDraw = Player.isFacingRight ? Player.jumpForwardImage : Player.jumpBackwardImage;
 	}
 	else if (Player.isMovingRight) {
-		iShowImage(Player.x, Player.y, playerSize - 8, playerSize, Player.runForwardImages[Player.runFrame]);
+		imageToDraw = Player.runForwardImages[Player.runFrame];
 	}
 	else if (Player.isMovingLeft) {
-		iShowImage(Player.x, Player.y, playerSize - 8, playerSize, Player.runBackwardImages[Player.runFrame]);
+		imageToDraw = Player.runBackwardImages[Player.runFrame];
 	}
 	else {
-		if (Player.isFacingRight)
-			iShowImage(Player.x, Player.y, playerSize - 8, playerSize, Player.standForwardImage);
-		else
-			iShowImage(Player.x, Player.y, playerSize - 8, playerSize, Player.standBackwardImage);
+		imageToDraw = Player.isFacingRight ? Player.standForwardImage : Player.standBackwardImage;
+	}
+	
+	// Apply vertical flip when gravity is reversed
+	if (reversedGravity) {
+		glPushMatrix();
+		glTranslatef(Player.x + (playerSize - 8) / 2, Player.y + playerSize / 2, 0);
+		glRotatef(180, 1, 0, 0); // Flip vertically
+		glTranslatef(-(Player.x + (playerSize - 8) / 2), -(Player.y + playerSize / 2), 0);
+		iShowImage(Player.x, Player.y, playerSize - 8, playerSize, imageToDraw);
+		glPopMatrix();
+	} else {
+		iShowImage(Player.x, Player.y, playerSize - 8, playerSize, imageToDraw);
 	}
 }
 

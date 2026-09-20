@@ -11,6 +11,7 @@
 #include "Checkpoint.hpp"
 #include "lvl1.hpp"
 #include "lvl2.hpp"
+#include "lvl3.hpp"
 #include "UI.hpp"
 #include "MainMenu.hpp"
 #include "MenuPage.hpp"
@@ -21,12 +22,30 @@ int PlayerX_For_Parallax = 0;
 // Current active level (1 or 2)
 int currentLevel = 1;
 
+// Level 3 portal state
+bool playerInSubLevel = false;
+
+// Gravity reversal for sublevel
+bool reversedGravity = false;
+
 // Level 2 background image
 int lvl2BgImage = 0;
+// Level 3 background image
+int lvl3BgImage = 0;
+// Level 3 sublevel background image
+int bgSubLvl3Image = 0;
+
+// Level 3 development mode variables (from lvl3.hpp)
+extern const bool ENABLE_SUBLEVEL_DIRECTLY;
+extern const int LEVEL3_SPAWN_X;
+extern const int LEVEL3_SPAWN_Y;
+extern const int SUBLEVEL_SPAWN_X;
+extern const int SUBLEVEL_SPAWN_Y;
 
 // Initialize levels
 void lvl1Initialize();
 void lvl2Initialize();
+void lvl3Initialize();
 
 // Starts a level fresh from the beginning spawn point
 void startFreshLevel(int levelNum) {
@@ -36,6 +55,9 @@ void startFreshLevel(int levelNum) {
 	}
 	else if (levelNum == 2) {
 		lvl2Initialize();
+	}
+	else if (levelNum == 3) {
+		lvl3Initialize();
 	}
 	currentGameState = STATE_PLAYING;
 }
@@ -66,10 +88,15 @@ int laserImage;
 int platformImage;
 int platformLvl1Image;
 int platformLvl2Image;
+int platformLvl3HoriImage = 0;
+int platformLvl3VertiImage = 0;
+int platformSubLvl3HoriImage = 0;
+int platformSubLvl3VertiImage = 0;
 int liftPlatformImage;
 int redSwitchImage;
 int greenSwitchImage;
 int keyImage;
+int keyReImage; // Reversed key for sublevel
 int closedBoxImage;
 int openedBoxImage;
 int closedDoorImage;
@@ -80,6 +107,10 @@ int menuBtnImage;
 int soundOnImage = 0;
 int soundOffImage = 0;
 bool isSoundOn = true;
+int portalImage = 0;
+int portalReImage = 0; // Reversed portal for sublevel
+int closedGateImage = 0;
+int openedGateImage = 0;
 int cutterImages[3];
 int cashImage = 0;
 int escapeBarImages[10] = { 0 };
@@ -136,7 +167,10 @@ void iDraw()
 	}
 
 	if (currentGameState == STATE_PAUSE_MENU) {
-		if (currentLevel == 2) {
+		if (currentLevel == 3) {
+			drawLevel3();
+		}
+		else if (currentLevel == 2) {
 			drawLevel2();
 		}
 		else {
@@ -153,7 +187,10 @@ void iDraw()
 	if (isGameOver) {
 		applyScreenShake();
 
-		if (currentLevel == 2) {
+		if (currentLevel == 3) {
+			drawLevel3();
+		}
+		else if (currentLevel == 2) {
 			drawLevel2();
 		}
 		else {
@@ -175,7 +212,10 @@ void iDraw()
 
 	applyScreenShake();
 
-	if (currentLevel == 2) {
+	if (currentLevel == 3) {
+		drawLevel3();
+	}
+	else if (currentLevel == 2) {
 		drawLevel2();
 	}
 	else {
@@ -256,34 +296,79 @@ void boundaryCheck() {
 
 	int midX = Player.x + (playerSize / 2);
 
-	for (int i = Player.y + playerSize; i < 720; i++) {
-		if (mat[i][midX] == 1) {
-			ceilingY = i;
-			break;
+	if (reversedGravity) {
+		// Reversed gravity: search upward for ground (platform above acts as ground)
+		// Start from player's head and search upward
+		for (int i = Player.y + playerSize; i < 720; i++) {
+			if (mat[i][midX] == 1) {
+				groundY = i; // Platform above player
+				break;
+			}
 		}
-	}
+		
+		// Search downward for ceiling (platform below acts as ceiling)
+		for (int i = Player.y; i >= 0; i--) {
+			if (mat[i][midX] == 1) {
+				ceilingY = i; // Platform below player
+				break;
+			}
+		}
+		
+		// Ground collision in reversed gravity (landing on platform above)
+		// Only stop if player is moving upward (vy > 0) and actually hits the platform
+		if (Player.vy > 0 && Player.y + playerSize >= groundY && Player.y + playerSize <= groundY + 10) {
+			Player.y = groundY - playerSize;
+			Player.vy = 0;
+			Player.isJumping = false; // Stop jumping when landing
+		}
+		
+		// Ceiling collision in reversed gravity (hitting platform from above)
+		// Only stop if player is moving downward (vy < 0) and hits platform below
+		if (Player.vy < 0 && Player.y <= ceilingY + playerSize && Player.y >= ceilingY - 10) {
+			Player.y = ceilingY + playerSize;
+			Player.vy = 0;
+		}
+	} else {
+		// Normal gravity: original logic
+		for (int i = Player.y + playerSize; i < 720; i++) {
+			if (mat[i][midX] == 1) {
+				ceilingY = i;
+				break;
+			}
+		}
 
-	if (Player.y + playerSize >= ceilingY && Player.vy > 0) {
-		Player.y = ceilingY - playerSize;
-		Player.vy = -1;
-	}
+		// Ceiling collision - only stop if moving upward and close to ceiling
+		if (Player.vy > 0 && Player.y + playerSize >= ceilingY && Player.y + playerSize <= ceilingY + 10) {
+			Player.y = ceilingY - playerSize;
+			Player.vy = -1;
+		}
 
-	for (int i = Player.y + 10; i >= 0; i--) {
-		if (mat[i][midX] == 1) {
-			groundY = i;
-			break;
+		for (int i = Player.y + 10; i >= 0; i--) {
+			if (mat[i][midX] == 1) {
+				groundY = i;
+				break;
+			}
+		}
+		
+		// Ground collision in normal gravity - only stop if moving downward and close to ground
+		if (Player.vy < 0 && Player.y <= groundY && Player.y >= groundY - 10) {
+			Player.y = groundY;
+			Player.vy = 0;
+			Player.isJumping = false;
 		}
 	}
 
 	for (int i = midX; i < 1200; i++) {
-		if (mat[Player.y + 15][i] == 1) {
+		int checkY = reversedGravity ? Player.y + playerSize / 2 : Player.y + 15;
+		if (mat[checkY][i] == 1) {
 			rightWall = i;
 			break;
 		}
 	}
 
 	for (int i = midX; i >= 0; i--) {
-		if (mat[Player.y + 15][i] == 1) {
+		int checkY = reversedGravity ? Player.y + playerSize / 2 : Player.y + 15;
+		if (mat[checkY][i] == 1) {
 			leftWall = i;
 			break;
 		}
@@ -295,18 +380,46 @@ void boundaryCheck() {
 	if (Player.x >= rightWall - playerSize) {
 		Player.x = rightWall - playerSize;
 	}
+
+	// Boundary checks for falling off the screen
+	if (reversedGravity) {
+		// In reversed gravity, check if player falls off the top
+		if (Player.y < -50) {
+			// Player fell off the top, restart level
+			restartCurrentLevel();
+		}
+	} else {
+		// In normal gravity, check if player falls off the bottom
+		// Lower threshold to catch player when they're clearly off screen
+		if (Player.y > 600) {
+			// Player fell off the bottom, restart level
+			restartCurrentLevel();
+		}
+	}
 }
 
 void checkStairCollision() {
 	int midX = Player.x + (playerSize / 2);
 	int feetY = Player.y;
 	int centerY = Player.y + (playerSize / 2);
+	int headY = Player.y + playerSize;
 
-	if (mat[centerY][midX] == 2 || mat[feetY][midX] == 2) {
-		Player.isOnStair = true;
-	}
-	else {
-		Player.isOnStair = false;
+	if (reversedGravity) {
+		// In reversed gravity, check head (top of character) for stairs
+		if (mat[centerY][midX] == 2 || mat[headY][midX] == 2) {
+			Player.isOnStair = true;
+		}
+		else {
+			Player.isOnStair = false;
+		}
+	} else {
+		// Normal gravity, check feet for stairs
+		if (mat[centerY][midX] == 2 || mat[feetY][midX] == 2) {
+			Player.isOnStair = true;
+		}
+		else {
+			Player.isOnStair = false;
+		}
 	}
 }
 
@@ -316,7 +429,10 @@ void checkSwitchCollision() {
 	int centerY = Player.y + (playerSize / 2);
 
 	if (mat[feetY][midX] == 3 || mat[centerY][midX] == 3) {
-		if (currentLevel == 2) {
+		if (currentLevel == 3) {
+			level3Switch.activated = true;
+		}
+		else if (currentLevel == 2) {
 			level2Switch.activated = true;
 		}
 		else {
@@ -416,6 +532,16 @@ void fixedUpdate()
 
 		hitObstacle = (hitLaser || hitBomb || hitCutter || hitCamera || hitGate);
 	}
+	else if (currentLevel == 3) {
+		Player.isCarryingLoot = level3LootBox.isOpened;
+
+		bool hitLaser = checkLevel3LaserCollision(Player.x, Player.y, playerSize - 8);
+		hitBomb = checkLevel3BombCollision(Player.x, Player.y, playerSize - 8);
+		bool hitCutter = checkLevel3CutterCollision(Player.x, Player.y, playerSize - 8);
+		hitCamera = checkLevel3CameraCollision(Player.x, Player.y, playerSize - 8);
+
+		hitObstacle = (hitLaser || hitBomb || hitCutter || hitCamera);
+	}
 
 	if (hitObstacle) {
 		spawnExplosionSmoke(Player.x + playerSize / 2, Player.y + playerSize / 2, 35);
@@ -514,6 +640,47 @@ void fixedUpdate()
 
 		updateLevel2Logic();
 		level2Key.update();
+	}
+	else if (currentLevel == 3) {
+		bool atDoor = (Player.x + playerSize >= level3Door.x) && (Player.x <= level3Door.x + 60) &&
+			(Player.y + playerSize >= level3Door.y) && (Player.y <= level3Door.y + 80);
+		if (atDoor) {
+			if (!level3LootBox.isOpened) {
+				showUIMessage("OBJECTIVE: Loot the Vault before exiting!", 200);
+			}
+			else {
+				isLevelComplete = true;
+				isCountdownActive = false;
+				stopAlarmSounds();
+				GameController.stopVibration();
+				reduceMusicVolumeForLevelComplete();
+				spawnCoinBurst(level3Door.x + 25, level3Door.y + 35, 40);
+				return;
+			}
+		}
+
+		checkSwitchCollision();
+
+		bool touchingBox = (Player.x + playerSize >= level3LootBox.x) && (Player.x <= level3LootBox.x + 40) &&
+			(Player.y + playerSize >= level3LootBox.y) && (Player.y <= level3LootBox.y + 40);
+		if (!level3Key.isCollected && !level3LootBox.isOpened && touchingBox) {
+			showUIMessage("VAULT LOCKED: Find the Key in the Dimension Rift!", 200);
+		}
+
+		bool wasBoxClosed = !level3LootBox.isOpened;
+		checkLevel3ItemCollisions(Player.x, Player.y, playerSize);
+
+		if (wasBoxClosed && level3LootBox.isOpened) {
+			isCountdownActive = true;
+			showUIMessage("ALARM TRIGGERED! Escape through the door now!", 400);
+			playAlarmSounds();
+		}
+
+		updateLevel3Logic();
+		// Only update key when in sublevel
+		if (playerInSubLevel) {
+			level3Key.update();
+		}
 	}
 
 	boundaryCheck();
@@ -615,6 +782,96 @@ void lvl2Initialize() {
 	playLevel2Music();
 }
 
+// Level 3 initialization
+void lvl3Initialize() {
+	currentLevel = 3;
+	totalGemsInLevel = gem3Count;
+
+	// Check if there's a sublevel checkpoint first
+	bool checkpointInSubLevel = GameCheckpoint.getSubLevelState();
+	
+	// Check development mode variable for direct sublevel access
+	if (ENABLE_SUBLEVEL_DIRECTLY) {
+		playerInSubLevel = true;
+		reversedGravity = true;
+		Player.gravity = 0.3f;
+	} else if (checkpointInSubLevel) {
+		// Use checkpoint state if available
+		playerInSubLevel = true;
+		reversedGravity = true;
+		Player.gravity = 0.3f;
+	} else {
+		playerInSubLevel = false;
+		reversedGravity = false;
+		Player.gravity = -0.3f;
+	}
+
+	// Initialize appropriate level based on sublevel state
+	if (playerInSubLevel) {
+		level3SubMat();
+	} else {
+		level3Lift.reset();
+		level3MainMat();
+	}
+
+	updateLevel3Logic();
+
+	int px, py;
+	// Use appropriate spawn position based on development mode and checkpoint
+	extern const int LEVEL3_SPAWN_X;
+	extern const int LEVEL3_SPAWN_Y;
+	extern const int SUBLEVEL_SPAWN_X;
+	extern const int SUBLEVEL_SPAWN_Y;
+	extern const int PORTAL_TO_SUBLEVEL_X;
+	extern const int PORTAL_TO_SUBLEVEL_Y;
+	
+	if (ENABLE_SUBLEVEL_DIRECTLY) {
+		GameCheckpoint.loadSpawnPoint(3, px, py, level3Key.isCollected, SUBLEVEL_SPAWN_X, SUBLEVEL_SPAWN_Y);
+	} else if (checkpointInSubLevel) {
+		// Spawn at sublevel checkpoint location
+		GameCheckpoint.loadSpawnPoint(3, px, py, level3Key.isCollected, PORTAL_TO_SUBLEVEL_X, PORTAL_TO_SUBLEVEL_Y);
+	} else {
+		GameCheckpoint.loadSpawnPoint(3, px, py, level3Key.isCollected, LEVEL3_SPAWN_X, LEVEL3_SPAWN_Y);
+	}
+	Player.x = px;
+	Player.y = py;
+
+	Player.vy = 0;
+	Player.isJumping = false;
+	Player.isOnStair = false;
+	Player.isFacingRight = true;
+	Player.isCarryingLoot = false;
+
+	isGameOver = false;
+	isLevelComplete = false;
+
+	uiMessage[0] = '\0';
+	uiMessageTimer = 0;
+
+	level3LootBox.isOpened = false;
+	level3Door.reset();
+	level3Switch.activated = false;
+
+	for (int i = 0; i < gem3Count; i++) {
+		level3Gems[i].isCollected = false;
+	}
+
+	clearParticles();
+	resetShake();
+	initFloatingTexts();
+	resetScore();
+
+	countdownTimer = 40;
+	isCountdownActive = false;
+	stopAlarmSounds();
+	GameController.stopVibration();
+	showUIMessage("MISSION: Enter the Dimension Rift, find the Key, then loot the Vault!", 240);
+
+	playLevel2Music(); // Using level 2 music for level 3
+}
+
+
+
 void iLoadAllImages() {
 	loadCharacter();
 
@@ -628,10 +885,13 @@ void iLoadAllImages() {
 	backBtnImage = iLoadImage("Images/Buttons/backBtn.png");
 	level1Btn = iLoadImage("Images/Buttons/level1Btn.png");
 	level2Btn = iLoadImage("Images/Buttons/level2Btn.png");
+	level3Btn = iLoadImage("Images/Buttons/level3Btn.png");
 
 	redImage = iLoadImage("Images/red.png");
 	levelOne = iLoadImage("Images/Background/LevelOne.png");
 	lvl2BgImage = iLoadImage("Images/Background/bgLvl2.png");
+	lvl3BgImage = iLoadImage("Images/Background/bgLvl3.png");
+	bgSubLvl3Image = iLoadImage("Images/Background/bgSubLvl3.png");
 	
 	menubackgroundImage = iLoadImage("Images/Background/MenuBackground.png");
 	backgroundImage = iLoadImage("Images/Background/Background.png");
@@ -640,11 +900,16 @@ void iLoadAllImages() {
 	laserImage = iLoadImage("Images/Obstacle/RedLaser.png");
 	platformLvl1Image = iLoadImage("Images/Utility/PlatformLvl1.png");
 	platformLvl2Image = iLoadImage("Images/Utility/PlatformLvl2.png");
+	platformLvl3HoriImage = iLoadImage("Images/Utility/PlatformLvl3Hori.png");
+	platformLvl3VertiImage = iLoadImage("Images/Utility/PlatformLvl3Verti.png");
+	platformSubLvl3HoriImage = iLoadImage("Images/Utility/PlatformSubLvl3Hori.png");
+	platformSubLvl3VertiImage = iLoadImage("Images/Utility/PlatformSubLvl3Verti.png");
 	platformImage = (platformLvl1Image > 0) ? platformLvl1Image : iLoadImage("Images/Utility/Platform.png");
 	liftPlatformImage = iLoadImage("Images/Utility/LiftPlatform.png");
 	redSwitchImage = iLoadImage("Images/Utility/RedSwitch.png");
 	greenSwitchImage = iLoadImage("Images/Utility/GreenSwitch.png");
 	keyImage = iLoadImage("Images/Utility/Key.png");
+	keyReImage = iLoadImage("Images/Utility/KeyRe.png"); // Reversed key for sublevel
 	closedBoxImage = iLoadImage("Images/Utility/ClosedBox.png");
 	openedBoxImage = iLoadImage("Images/Utility/OpenedBox.png");
 	closedDoorImage = iLoadImage("Images/Utility/ClosedDoor.png");
@@ -654,6 +919,10 @@ void iLoadAllImages() {
 	menuBtnImage = iLoadImage("Images/Utility/Menu.png");
 	soundOnImage = iLoadImage("Images/Utility/SoundOn.png");
 	soundOffImage = iLoadImage("Images/Utility/SoundOff.png");
+	portalImage = iLoadImage("Images/Utility/Portal.png");
+	portalReImage = iLoadImage("Images/Utility/PortalRe.png"); // Reversed portal for sublevel
+	closedGateImage = iLoadImage("Images/Utility/ClosedGate.png");
+	openedGateImage = iLoadImage("Images/Utility/OpenedGate.png");
 
 	cutterImages[0] = iLoadImage("Images/Obstacle/Cutter1.png");
 	cutterImages[1] = iLoadImage("Images/Obstacle/Cutter2.png");
@@ -678,9 +947,9 @@ int main()
 
 	// Ensure game starts cleanly on the Main Menu without active checkpoints
 	GameCheckpoint.clear();
-	currentGameState = STATE_MAIN_MENU;
+	currentGameState = STATE_MAIN_MENU; 
 
-	iSetTimer(30, fixedUpdate);
+	iSetTimer(30, fixedUpdate); // Back to original timer speed
 	iSetTimer(1000, countdown);
 
 	iStart();
