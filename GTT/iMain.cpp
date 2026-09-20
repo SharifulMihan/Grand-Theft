@@ -11,6 +11,7 @@
 #include "Checkpoint.hpp"
 #include "lvl1.hpp"
 #include "lvl2.hpp"
+#include "lvl3.hpp"
 #include "UI.hpp"
 #include "MainMenu.hpp"
 #include "MenuPage.hpp"
@@ -18,15 +19,17 @@
 // Global position sync for parallax background
 int PlayerX_For_Parallax = 0;
 
-// Current active level (1 or 2)
+// Current active level
 int currentLevel = 1;
 
 // Level 2 background image
 int lvl2BgImage = 0;
+int portalImage = 0;
 
 // Initialize levels
 void lvl1Initialize();
 void lvl2Initialize();
+void lvl3Initialize();
 
 // Starts a level fresh from the beginning spawn point
 void startFreshLevel(int levelNum) {
@@ -36,6 +39,9 @@ void startFreshLevel(int levelNum) {
 	}
 	else if (levelNum == 2) {
 		lvl2Initialize();
+	}
+	else if (levelNum == 3) {
+		lvl3Initialize();
 	}
 	currentGameState = STATE_PLAYING;
 }
@@ -136,7 +142,10 @@ void iDraw()
 	}
 
 	if (currentGameState == STATE_PAUSE_MENU) {
-		if (currentLevel == 2) {
+		if (currentLevel == 3) {
+			drawLevel3();
+		}
+		else if (currentLevel == 2) {
 			drawLevel2();
 		}
 		else {
@@ -153,7 +162,10 @@ void iDraw()
 	if (isGameOver) {
 		applyScreenShake();
 
-		if (currentLevel == 2) {
+		if (currentLevel == 3) {
+			drawLevel3();
+		}
+		else if (currentLevel == 2) {
 			drawLevel2();
 		}
 		else {
@@ -175,7 +187,10 @@ void iDraw()
 
 	applyScreenShake();
 
-	if (currentLevel == 2) {
+	if (currentLevel == 3) {
+		drawLevel3();
+	}
+	else if (currentLevel == 2) {
 		drawLevel2();
 	}
 	else {
@@ -416,6 +431,10 @@ void fixedUpdate()
 
 		hitObstacle = (hitLaser || hitBomb || hitCutter || hitCamera || hitGate);
 	}
+	else if (currentLevel == 3) {
+		Player.isCarryingLoot = level3LootBox.isOpened;
+		hitObstacle = checkLevel3ObstacleCollision(Player.x, Player.y, playerSize - 8);
+	}
 
 	if (hitObstacle) {
 		spawnExplosionSmoke(Player.x + playerSize / 2, Player.y + playerSize / 2, 35);
@@ -514,6 +533,53 @@ void fixedUpdate()
 
 		updateLevel2Logic();
 		level2Key.update();
+	}
+	else if (currentLevel == 3) {
+		bool portalHeld = isKeyPressed('e') || isKeyPressed('E') ||
+			isSpecialKeyPressed(GLUT_KEY_UP) || GameController.isUp();
+		if (useLevel3Portal(Player.x, Player.y, playerSize, portalHeld)) {
+			Player.vy = 0;
+			Player.isJumping = false;
+			Player.isOnStair = false;
+			Player.isClimbing = false;
+			Player.stopHorizontal();
+			Player.isFacingRight = (level3Room == KEY_CHAMBER);
+			playPointSound();
+			showUIMessage(level3Objective(), 240);
+			return;
+		}
+
+		bool hadKey = level3Key.isCollected;
+		bool hadLoot = level3LootBox.isOpened;
+		checkLevel3ItemCollisions(Player.x, Player.y, playerSize);
+		if (!hadKey && level3Key.isCollected) {
+			showUIMessage("KEY FOUND! Security is asleep. Return to the left portal.", 300);
+		}
+		if (!hadLoot && level3LootBox.isOpened) {
+			countdownTimer = level3EscapeTime;
+			isCountdownActive = true;
+			playAlarmSounds();
+			showUIMessage("LOOT SECURED! Follow the ground floor RIGHT to the exit!", 300);
+		}
+		if (level3Room == PORTAL_VAULT) {
+			if (!level3Key.isCollected &&
+				level3Overlaps(Player.x, Player.y, playerSize, 460, 150, 44, 40)) {
+				showUIMessage("BOX LOCKED: The key is through the upstairs portal.", 150);
+			}
+			if (level3Door.checkCollision(Player.x, Player.y, playerSize)) {
+				isLevelComplete = true;
+				isCountdownActive = false;
+				stopAlarmSounds();
+				GameController.stopVibration();
+				reduceMusicVolumeForLevelComplete();
+				return;
+			}
+			if (!level3LootBox.isOpened &&
+				level3Overlaps(Player.x, Player.y, playerSize, 1100, 150, 50, 70)) {
+				showUIMessage("EXIT LOCKED: Bring back the key and loot the golden box.", 150);
+			}
+		}
+		updateLevel3Logic();
 	}
 
 	boundaryCheck();
@@ -615,6 +681,31 @@ void lvl2Initialize() {
 	playLevel2Music();
 }
 
+void lvl3Initialize() {
+	currentLevel = 3;
+	totalGemsInLevel = gem3Count;
+	resetLevel3(Player.x, Player.y);
+	Player.vy = 0;
+	Player.isJumping = false;
+	Player.isOnStair = false;
+	Player.isClimbing = false;
+	Player.isFacingRight = true;
+	Player.isCarryingLoot = level3LootBox.isOpened;
+	Player.stopHorizontal();
+	isGameOver = false;
+	isLevelComplete = false;
+	clearParticles();
+	resetShake();
+	initFloatingTexts();
+	countdownTimer = level3EscapeTime;
+	isCountdownActive = level3LootBox.isOpened;
+	stopAlarmSounds();
+	GameController.stopVibration();
+	playLevel2Music();
+	if (isCountdownActive) playAlarmSounds();
+	showUIMessage(level3Objective(), 240);
+}
+
 void iLoadAllImages() {
 	loadCharacter();
 
@@ -628,6 +719,8 @@ void iLoadAllImages() {
 	backBtnImage = iLoadImage("Images/Buttons/backBtn.png");
 	level1Btn = iLoadImage("Images/Buttons/level1Btn.png");
 	level2Btn = iLoadImage("Images/Buttons/level2Btn.png");
+	level3Btn = iLoadImage("Images/Buttons/level3Btn.png");
+	portalImage = iLoadImage("Images/Utility/Portal.png");
 
 	redImage = iLoadImage("Images/red.png");
 	levelOne = iLoadImage("Images/Background/LevelOne.png");

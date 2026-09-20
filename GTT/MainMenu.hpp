@@ -21,6 +21,7 @@ static ImageButton exitButton(150, 210, 260, 60, exitBtnImage, "EXIT");
 // Navigation buttons
 static ImageButton level1Button(150, 480, 260, 50, level1Btn, "LEVEL 1");
 static ImageButton level2Button(150, 410, 260, 50, level2Btn, "LEVEL 2");
+static ImageButton level3Button(150, 340, 260, 50, level3Btn, "LEVEL 3");
 static ImageButton backButton(200, 240, 150, 35, backBtnImage, "BACK");
 
 // ============================================================================
@@ -159,6 +160,7 @@ inline void drawHowToPlayPage() {
 	iText(150, 400, "[ A / D ]  :  Move Left / Right", GLUT_BITMAP_HELVETICA_18);
 	iText(150, 365, "[ SPACE ]  :  Jump", GLUT_BITMAP_HELVETICA_18);
 	iText(150, 330, "[ W / S ]  :  Climb Stairs Up / Down", GLUT_BITMAP_HELVETICA_18);
+	iText(150, 295, "[ E / UP ]  :  Use Level 3 portals (Controller: D-pad Up)", GLUT_BITMAP_HELVETICA_18);
 
 	backButton.draw();
 }
@@ -173,6 +175,7 @@ inline void drawLevelPage() {
 
 	level1Button.draw();
 	level2Button.draw();
+	level3Button.draw();
 	backButton.draw();
 }
 
@@ -214,6 +217,11 @@ inline void handleLevelPageClick(int mx, int my) {
 		GameCheckpoint.clear(); // Clears checkpoint to ensure starting from initial spawn
 		currentLevel = 2;
 		lvl2Initialize();
+		currentGameState = STATE_PLAYING;
+	}
+	else if (level3Button.isClicked(mx, my)) {
+		GameCheckpoint.clear();
+		lvl3Initialize();
 		currentGameState = STATE_PLAYING;
 	}
 	else if (backButton.isClicked(mx, my)) {
@@ -279,14 +287,15 @@ inline void handleLevelPageController() {
 		}
 	}
 	else if (GameController.isNavDown()) {
-		if (levelSelectIndex < 2) {
+		if (levelSelectIndex < 3) {
 			levelSelectIndex++;
 		}
 	}
 
 	level1Button.isSelected = (levelSelectIndex == 0);
 	level2Button.isSelected = (levelSelectIndex == 1);
-	backButton.isSelected = (levelSelectIndex == 2);
+	level3Button.isSelected = (levelSelectIndex == 2);
+	backButton.isSelected = (levelSelectIndex == 3);
 
 	// Confirm with Xbox A / PS4 X
 	if (GameController.isConfirmPressed()) {
@@ -304,6 +313,11 @@ inline void handleLevelPageController() {
 			currentGameState = STATE_PLAYING;
 		}
 		else if (levelSelectIndex == 2) {
+			GameCheckpoint.clear();
+			lvl3Initialize();
+			currentGameState = STATE_PLAYING;
+		}
+		else if (levelSelectIndex == 3) {
 			currentGameState = STATE_MAIN_MENU;
 		}
 	}

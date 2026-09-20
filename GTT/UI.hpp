@@ -7,6 +7,7 @@
 #include "utility.hpp"
 #include "lvl1.hpp"
 #include "lvl2.hpp"
+#include "lvl3.hpp"
 
 extern char uiMessage[128];
 extern int uiMessageTimer;
@@ -76,7 +77,7 @@ inline void playLevel2Music() {
 // Resumes or plays the current level's background music if sound is enabled
 inline void playCurrentLevelMusic() {
 	if (!isSoundOn) return;
-	if (currentLevel == 2) {
+	if (currentLevel == 2 || currentLevel == 3) {
 		playLevel2Music();
 	}
 	else {
@@ -107,7 +108,7 @@ inline bool handleSoundButtonClick(int mx, int my) {
 // Decreases the currently active level's music volume to 60% for the level complete screen
 inline void reduceMusicVolumeForLevelComplete() {
 	if (!isSoundOn) return;
-	const char* alias = (currentLevel == 2) ? "level2song" : "level1song";
+	const char* alias = (currentLevel == 2 || currentLevel == 3) ? "level2song" : "level1song";
 	char cmd[64];
 	sprintf_s(cmd, sizeof(cmd), "play %s repeat", alias);
 	mciSendString(cmd, NULL, 0, NULL);
@@ -182,6 +183,10 @@ bool act = true;
 inline void drawHUD() {
 	bool hasKey = (currentLevel == 2) ? level2Key.isCollected : level1Key.isCollected;
 	bool hasLoot = (currentLevel == 2) ? level2LootBox.isOpened : level1LootBox.isOpened;
+	if (currentLevel == 3) {
+		hasKey = level3Key.isCollected;
+		hasLoot = level3LootBox.isOpened;
+	}
 
 	loadSoundUIImages();
 
@@ -224,6 +229,7 @@ extern int escapeBarImages[10];
 	// Escape Countdown Timer with visual image progress bar
 	if (isCountdownActive) {
 		int maxTime = (currentLevel == 2) ? 60 : 50;
+		if (currentLevel == 3) maxTime = level3EscapeTime;
 		double timerRatio = (double)countdownTimer / (double)maxTime;
 		if (timerRatio < 0.0) timerRatio = 0.0;
 		if (timerRatio > 1.0) timerRatio = 1.0;
@@ -329,6 +335,12 @@ inline void drawLevelCompleteScreen() {
 		iSetColor(0, 255, 255); // Cyan
 		iText(350, 600, "Quick, meet me in the canteen!", GLUT_BITMAP_HELVETICA_18);
 	}
+	else if (currentLevel == 3) {
+		iSetColor(180, 245, 255);
+		iText(410, 640, "TWO ROOMS. ONE PERFECT HEIST.", GLUT_BITMAP_TIMES_ROMAN_24);
+		iSetColor(255, 215, 0);
+		iText(445, 600, "The portal vault is yours!", GLUT_BITMAP_HELVETICA_18);
+	}
 	else {
 		// Generic text for Level 1
 		iSetColor(255, 215, 0);
@@ -415,6 +427,7 @@ inline void handleLevelCompleteController() {
 	if (GameController.isConfirmPressed()) {
 		playClickSound();
 		if (completeSelectIndex == 0) {
+			GameCheckpoint.clear();
 			restartCurrentLevel();
 			currentGameState = STATE_PLAYING;
 		}

@@ -65,7 +65,7 @@ extern int mainmenuBtn;
 extern int curMouseX;
 extern int curMouseY;
 
-// Which level is currently active (1 or 2)
+// Which level is currently active
 extern int currentLevel;
 
 // Level 2 background image
@@ -74,9 +74,13 @@ extern int lvl2BgImage;
 // Forward declarations for level initialization
 void lvl1Initialize();
 void lvl2Initialize();
+void lvl3Initialize();
 
 inline void restartCurrentLevel() {
-	if (currentLevel == 2) {
+	if (currentLevel == 3) {
+		lvl3Initialize();
+	}
+	else if (currentLevel == 2) {
 		lvl2Initialize();
 	}
 	else {

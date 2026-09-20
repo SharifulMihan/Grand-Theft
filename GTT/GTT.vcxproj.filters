@@ -53,6 +53,9 @@
     <ClInclude Include="lvl2.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lvl3.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Checkpoint.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
