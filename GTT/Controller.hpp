@@ -32,10 +32,6 @@ private:
 	WORD hapticLeftMotor;
 	WORD hapticRightMotor;
 
-	// Whistle pulsating vibration state (1s on, 2s off cycle)
-	bool whistlePulseActive;
-	float whistleCycleTimer;
-
 public:
 	ControllerManager() {
 		hXInput = NULL;
@@ -49,9 +45,6 @@ public:
 		hapticTimer = 0.0f;
 		hapticLeftMotor = 0;
 		hapticRightMotor = 0;
-		whistlePulseActive = false;
-		whistleCycleTimer = 0.0f;
-
 		initXInput();
 	}
 
@@ -274,34 +267,18 @@ public:
 
 	// Player dies: vibrate for 1.0 second
 	void triggerPlayerDeath() {
-		whistlePulseActive = false; // Stop alarm pulse on death
 		triggerHaptic(1.0f, 65535, 65535);
 	}
 
-	// Start / update whistle pulsating vibration (1s vibrate, 2s off, repeat)
-	void setWhistlePulse(bool active) {
-		if (active) {
-			if (!whistlePulseActive) {
-				whistlePulseActive = true;
-				whistleCycleTimer = 0.0f;
-			}
-		}
-		else {
-			if (whistlePulseActive) {
-				whistlePulseActive = false;
-				whistleCycleTimer = 0.0f;
-				if (hapticTimer <= 0.0f) {
-					stopVibration();
-				}
-			}
-		}
+	// Loot box opened: vibrate once for 2 seconds.
+	void triggerLootBoxLooted() {
+		triggerHaptic(2.0f, 45000, 45000);
 	}
 
 	void stopVibration() {
 		hapticTimer = 0.0f;
 		hapticLeftMotor = 0;
 		hapticRightMotor = 0;
-		whistlePulseActive = false;
 		sendVibration(0, 0);
 	}
 
@@ -315,37 +292,18 @@ private:
 	}
 
 	void updateHaptics(float dt) {
-		// Priority 1: One-shot event vibrations (Cash or Death)
+		// One-shot event vibrations (cash, key, loot box, or death).
 		if (hapticTimer > 0.0f) {
 			hapticTimer -= dt;
 			if (hapticTimer <= 0.0f) {
 				hapticTimer = 0.0f;
 				hapticLeftMotor = 0;
 				hapticRightMotor = 0;
-				if (!whistlePulseActive) {
-					sendVibration(0, 0);
-				}
+				sendVibration(0, 0);
 			}
 			else {
 				sendVibration(hapticLeftMotor, hapticRightMotor);
 				return;
-			}
-		}
-
-		// Priority 2: Whistle pulsation (1.0s vibrate, 6.0s off = 7.0s total period)
-		if (whistlePulseActive) {
-			whistleCycleTimer += dt;
-			if (whistleCycleTimer >= 7.0f) {
-				whistleCycleTimer -= 7.0f;
-			}
-
-			if (whistleCycleTimer < 1.0f) {
-				// Vibrate phase (1 second)
-				sendVibration(42000, 42000);
-			}
-			else {
-				// Off phase (6 seconds)
-				sendVibration(0, 0);
 			}
 		}
 	}

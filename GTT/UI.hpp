@@ -32,6 +32,7 @@ inline void initAudio() {
 	mciSendString("open \"Sound//jump.mp3\" alias jumpsound", NULL, 0, NULL);
 	mciSendString("open \"Sound//hover.mp3\" alias hoversound", NULL, 0, NULL);
 	mciSendString("open \"Sound//click.mp3\" alias clicksound", NULL, 0, NULL);
+	mciSendString("open \"Sound//IntroSound.mp3\" alias introsound", NULL, 0, NULL);
 	
 	// Pre-load effect sounds to reduce delay
 	mciSendString("open \"Sound//point.mp3\" type mpegvideo alias pointSound", NULL, 0, NULL);
@@ -141,6 +142,30 @@ inline void playAlarmSounds() {
 
 inline void playJumpSound(){
 	mciSendString("play jumpsound from 0", NULL, 0, NULL);
+}
+
+inline void playIntroSound(){
+	if (!isSoundOn) return;
+	
+	char cmd[128];
+	
+	mciSendString("stop introsound", NULL, 0, NULL);
+	mciSendString("seek introsound to start", NULL, 0, NULL);
+	
+	sprintf_s(cmd, sizeof(cmd), "setaudio introsound volume to %d", 1000);
+	mciSendString(cmd, NULL, 0, NULL);
+	
+	sprintf_s(cmd, sizeof(cmd), "setaudio introsound left on");
+	mciSendString(cmd, NULL, 0, NULL);
+	
+	sprintf_s(cmd, sizeof(cmd), "setaudio introsound right on");
+	mciSendString(cmd, NULL, 0, NULL);
+	
+	mciSendString("play introsound", NULL, 0, NULL);
+}
+
+inline void stopIntroSound(){
+	mciSendString("stop introsound", NULL, 0, NULL);
 }
 // shows text message
 inline void showUIMessage(const char* text, int durationFrames = 75) {

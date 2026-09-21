@@ -1,0 +1,5 @@
+Mihan 2 16 0
+Newton 6 2 20
+Saber 0 0 2
+tirtha 0 0 5
+Illuminati 4 0 0

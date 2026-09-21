@@ -1,11 +1,6 @@
 #include "iGraphics.h"
-#include <iostream>
 #include <stdio.h>
 
-// Custom Headers
-#include "Effects.hpp"
-#include "VisualFX.hpp"
-#include "Scoring.hpp"
 #include "utility.hpp"
 #include "Character.hpp"
 #include "Checkpoint.hpp"
@@ -14,42 +9,35 @@
 #include "lvl3.hpp"
 #include "UI.hpp"
 #include "MainMenu.hpp"
+#include "MainMenuAnimation.hpp"
 #include "MenuPage.hpp"
+#include "FileHandler.hpp"
+#include "NameWindow.hpp"
 
-// Global position sync for parallax background
 int PlayerX_For_Parallax = 0;
 
-// Current active level (1 or 2)
 int currentLevel = 1;
 
-// Level 3 portal state
 bool playerInSubLevel = false;
 
-// Gravity reversal for sublevel
 bool reversedGravity = false;
 
-// Level 2 background image
 int lvl2BgImage = 0;
-// Level 3 background image
 int lvl3BgImage = 0;
-// Level 3 sublevel background image
 int bgSubLvl3Image = 0;
 
-// Level 3 development mode variables (from lvl3.hpp)
 extern const bool ENABLE_SUBLEVEL_DIRECTLY;
 extern const int LEVEL3_SPAWN_X;
 extern const int LEVEL3_SPAWN_Y;
 extern const int SUBLEVEL_SPAWN_X;
 extern const int SUBLEVEL_SPAWN_Y;
 
-// Initialize levels
 void lvl1Initialize();
 void lvl2Initialize();
 void lvl3Initialize();
 
-// Starts a level fresh from the beginning spawn point
 void startFreshLevel(int levelNum) {
-	GameCheckpoint.clear(); // Clears active checkpoint state
+	GameCheckpoint.clear();
 	if (levelNum == 1) {
 		lvl1Initialize();
 	}
@@ -62,7 +50,7 @@ void startFreshLevel(int levelNum) {
 	currentGameState = STATE_PLAYING;
 }
 
-// Resets checkpoint and returns to main menu
+
 void goToMainMenu() {
 	GameCheckpoint.clear();
 	stopAlarmSounds();
@@ -71,13 +59,13 @@ void goToMainMenu() {
 	currentGameState = STATE_MAIN_MENU;
 }
 
-// Initial game state
-GameState currentGameState = STATE_MAIN_MENU;
+
+GameState currentGameState = STATE_STARTUP_SPLASH;
 
 char uiMessage[128] = "";
 int uiMessageTimer = 0;
 
-// All image variables
+
 int redImage;
 int levelOne;
 int menubackgroundImage;
@@ -108,7 +96,7 @@ int soundOnImage = 0;
 int soundOffImage = 0;
 bool isSoundOn = true;
 int portalImage = 0;
-int portalReImage = 0; // Reversed portal for sublevel
+int portalReImage = 0;
 int closedGateImage = 0;
 int openedGateImage = 0;
 int cutterImages[3];
@@ -116,40 +104,129 @@ int cashImage = 0;
 int escapeBarImages[10] = { 0 };
 ControllerManager GameController;
 
-// Menu Button image variables
+
 int playBtnImage = 0;
 int levelsBtnImage = 0;
 int howToPlayBtnImage = 0;
 int exitBtnImage = 0;
 int backBtnImage = 0;
+int scoreboardBtnImage = 0;
+int aboutBtnImage = 0;
+int aboutPageImage = 0;
+
+int nameWindowImage = 0;
+int namePlateImage = 0;
+int submitBtnImage = 0;
+int cancelBtnImage = 0;
+
+
+int scoreboardBgImage = 0;
 
 int restartBtn = 0;
 int mainmenuBtn = 0;
 
-// Level Buttons
+
+int iGraphicsLogoImage = 0;
+int shorovujStudioLogoImage = 0;
+int startupSplashStartedAtMs = 0;
+bool introSoundPlayed = false;
+const int SPLASH_FADE_DURATION_MS = 700;
+const int SPLASH_HOLD_DURATION_MS = 1100;
+const int SPLASH_LOGO_DURATION_MS = (SPLASH_FADE_DURATION_MS * 2) + SPLASH_HOLD_DURATION_MS;
+
+float getSplashAlpha(int elapsedMs) {
+	if (elapsedMs < SPLASH_FADE_DURATION_MS) {
+		return (float)elapsedMs / SPLASH_FADE_DURATION_MS;
+	}
+
+	if (elapsedMs < SPLASH_FADE_DURATION_MS + SPLASH_HOLD_DURATION_MS) {
+		return 1.0f;
+	}
+
+	return 1.0f - (float)(elapsedMs - SPLASH_FADE_DURATION_MS - SPLASH_HOLD_DURATION_MS) / SPLASH_FADE_DURATION_MS;
+}
+
+void drawFadingSplashLogo(int image, float alpha) {
+	const int logoWidth = 1000;
+	const int logoHeight = 575;
+	const int logoX = (1200 - logoWidth) / 2;
+	const int logoY = (860 - logoHeight) / 2;
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, image);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glColor4f(1.0f, 1.0f, 1.0f, alpha);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0, 0); glVertex2f(logoX, logoY);
+		glTexCoord2f(1, 0); glVertex2f(logoX + logoWidth, logoY);
+		glTexCoord2f(1, -1); glVertex2f(logoX + logoWidth, logoY + logoHeight);
+		glTexCoord2f(0, -1); glVertex2f(logoX, logoY + logoHeight);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+void drawStartupSplash() {
+	const int elapsedMs = glutGet(GLUT_ELAPSED_TIME) - startupSplashStartedAtMs;
+	const int splashSequenceDurationMs = SPLASH_LOGO_DURATION_MS * 2;
+
+	if (elapsedMs < 50 && !introSoundPlayed) {
+		playIntroSound();
+		introSoundPlayed = true;
+	}
+
+	if (elapsedMs >= splashSequenceDurationMs) {
+		stopIntroSound();
+		currentGameState = STATE_MAIN_MENU;
+		return;
+	}
+
+	glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+	iFilledRectangle(0, 0, 1200, 860);
+
+	const bool showIGraphicsLogo = elapsedMs < SPLASH_LOGO_DURATION_MS;
+	const int logoElapsedMs = showIGraphicsLogo ? elapsedMs : elapsedMs - SPLASH_LOGO_DURATION_MS;
+	drawFadingSplashLogo(showIGraphicsLogo ? iGraphicsLogoImage : shorovujStudioLogoImage,
+		getSplashAlpha(logoElapsedMs));
+}
+
+
 int level1Btn = 0;
 int level2Btn = 0;
 int level3Btn = 0;
 
-// Default boundary
+
 int groundY = 250;
 int leftWall = 0;
 int rightWall = 1200;
 
-// Bit masking array
+
 int mat[720][1200] = { 0 };
 
-// Game status flags
+
 bool isGameOver = false;
 bool isLevelComplete = false;
 
 int countdownTimer = 15;
 bool isCountdownActive = false;
 
-// Main render loop
+
 void iDraw()
 {
 	iClear();
+
+	if (currentGameState == STATE_STARTUP_SPLASH) {
+		drawStartupSplash();
+		return;
+	}
 
 	if (currentGameState == STATE_MAIN_MENU) {
 		drawMainMenu();
@@ -163,6 +240,21 @@ void iDraw()
 
 	if (currentGameState == STATE_HOW_TO_PLAY) {
 		drawHowToPlayPage();
+		return;
+	}
+
+	if (currentGameState == STATE_USERNAME_INPUT) {
+		drawUsernameInput();
+		return;
+	}
+
+	if (currentGameState == STATE_SCOREBOARD) {
+		drawScoreboardPage();
+		return;
+	}
+
+	if (currentGameState == STATE_ABOUT) {
+		drawAboutPage();
 		return;
 	}
 
@@ -247,6 +339,13 @@ void iPassiveMouseMove(int mx, int my) {
 	curMouseY = my;
 }
 
+void iKeyboard(unsigned char key, int mx, int my) {
+
+}
+
+void iSpecialKeyboard(unsigned char key, int mx, int my) {
+}
+
 void iMouse(int button, int state, int mx, int my) {
 	if (button != GLUT_LEFT_BUTTON || state != GLUT_DOWN) {
 		return;
@@ -266,6 +365,15 @@ void iMouse(int button, int state, int mx, int my) {
 	}
 	else if (currentGameState == STATE_HOW_TO_PLAY) {
 		handleHowToPlayClick(mx, my);
+	}
+	else if (currentGameState == STATE_USERNAME_INPUT) {
+		handleUsernameInputClick(mx, my);
+	}
+	else if (currentGameState == STATE_SCOREBOARD) {
+		handleScoreboardClick(mx, my);
+	}
+	else if (currentGameState == STATE_ABOUT) {
+		handleAboutClick(mx, my);
 	}
 	else if (currentGameState == STATE_PAUSE_MENU) {
 		handlePauseMenuClick(mx, my);
@@ -297,39 +405,31 @@ void boundaryCheck() {
 	int midX = Player.x + (playerSize / 2);
 
 	if (reversedGravity) {
-		// Reversed gravity: search upward for ground (platform above acts as ground)
-		// Start from player's head and search upward
 		for (int i = Player.y + playerSize; i < 720; i++) {
 			if (mat[i][midX] == 1) {
-				groundY = i; // Platform above player
+				groundY = i;
 				break;
 			}
 		}
 		
-		// Search downward for ceiling (platform below acts as ceiling)
 		for (int i = Player.y; i >= 0; i--) {
 			if (mat[i][midX] == 1) {
-				ceilingY = i; // Platform below player
+				ceilingY = i;
 				break;
 			}
 		}
 		
-		// Ground collision in reversed gravity (landing on platform above)
-		// Only stop if player is moving upward (vy > 0) and actually hits the platform
 		if (Player.vy > 0 && Player.y + playerSize >= groundY && Player.y + playerSize <= groundY + 10) {
 			Player.y = groundY - playerSize;
 			Player.vy = 0;
-			Player.isJumping = false; // Stop jumping when landing
+			Player.isJumping = false;
 		}
 		
-		// Ceiling collision in reversed gravity (hitting platform from above)
-		// Only stop if player is moving downward (vy < 0) and hits platform below
 		if (Player.vy < 0 && Player.y <= ceilingY + playerSize && Player.y >= ceilingY - 10) {
 			Player.y = ceilingY + playerSize;
 			Player.vy = 0;
 		}
 	} else {
-		// Normal gravity: original logic
 		for (int i = Player.y + playerSize; i < 720; i++) {
 			if (mat[i][midX] == 1) {
 				ceilingY = i;
@@ -337,7 +437,7 @@ void boundaryCheck() {
 			}
 		}
 
-		// Ceiling collision - only stop if moving upward and close to ceiling
+
 		if (Player.vy > 0 && Player.y + playerSize >= ceilingY && Player.y + playerSize <= ceilingY + 10) {
 			Player.y = ceilingY - playerSize;
 			Player.vy = -1;
@@ -350,7 +450,7 @@ void boundaryCheck() {
 			}
 		}
 		
-		// Ground collision in normal gravity - only stop if moving downward and close to ground
+
 		if (Player.vy < 0 && Player.y <= groundY && Player.y >= groundY - 10) {
 			Player.y = groundY;
 			Player.vy = 0;
@@ -380,46 +480,35 @@ void boundaryCheck() {
 	if (Player.x >= rightWall - playerSize) {
 		Player.x = rightWall - playerSize;
 	}
-
-	// Boundary checks for falling off the screen
-	if (reversedGravity) {
-		// In reversed gravity, check if player falls off the top
-		if (Player.y < -50) {
-			// Player fell off the top, restart level
-			restartCurrentLevel();
-		}
-	} else {
-		// In normal gravity, check if player falls off the bottom
-		// Lower threshold to catch player when they're clearly off screen
-		if (Player.y > 600) {
-			// Player fell off the bottom, restart level
-			restartCurrentLevel();
-		}
-	}
 }
 
 void checkStairCollision() {
 	int midX = Player.x + (playerSize / 2);
 	int feetY = Player.y;
+	int lowerY = Player.y + playerSize / 4;
 	int centerY = Player.y + (playerSize / 2);
 	int headY = Player.y + playerSize;
 
+
+	if (midX < 0 || midX >= 1200) {
+		Player.isOnStair = false;
+		return;
+	}
+
 	if (reversedGravity) {
-		// In reversed gravity, check head (top of character) for stairs
-		if (mat[centerY][midX] == 2 || mat[headY][midX] == 2) {
-			Player.isOnStair = true;
-		}
-		else {
-			Player.isOnStair = false;
-		}
+		bool onStair = false;
+		if (headY >= 0 && headY < 720 && mat[headY][midX] == 2) onStair = true;
+		if (centerY >= 0 && centerY < 720 && mat[centerY][midX] == 2) onStair = true;
+		Player.isOnStair = onStair;
 	} else {
-		// Normal gravity, check feet for stairs
-		if (mat[centerY][midX] == 2 || mat[feetY][midX] == 2) {
-			Player.isOnStair = true;
-		}
-		else {
-			Player.isOnStair = false;
-		}
+		bool onStair = false;
+		if (feetY >= 0 && feetY < 720 && mat[feetY][midX] == 2) onStair = true;
+		if (lowerY >= 0 && lowerY < 720 && mat[lowerY][midX] == 2) onStair = true;
+		if (centerY >= 0 && centerY < 720 && mat[centerY][midX] == 2) onStair = true;
+
+		int aboveFeet = feetY + 5;
+		if (aboveFeet >= 0 && aboveFeet < 720 && mat[aboveFeet][midX] == 2) onStair = true;
+		Player.isOnStair = onStair;
 	}
 }
 
@@ -460,6 +549,11 @@ void fixedUpdate()
 {
 	GameController.update(0.025f);
 
+
+	if (currentGameState == STATE_STARTUP_SPLASH) {
+		return;
+	}
+
 	if (currentGameState == STATE_MAIN_MENU) {
 		handleMainMenuController();
 		return;
@@ -470,6 +564,19 @@ void fixedUpdate()
 	}
 	if (currentGameState == STATE_HOW_TO_PLAY) {
 		handleHowToPlayController();
+		return;
+	}
+	if (currentGameState == STATE_USERNAME_INPUT) {
+		handleUsernameInput(); // Handle keyboard input (polling-based)
+		handleUsernameInputController(); // Handle controller input
+		return;
+	}
+	if (currentGameState == STATE_SCOREBOARD) {
+		handleScoreboardController();
+		return;
+	}
+	if (currentGameState == STATE_ABOUT) {
+		handleAboutController();
 		return;
 	}
 	if (currentGameState == STATE_PAUSE_MENU) {
@@ -486,15 +593,12 @@ void fixedUpdate()
 		return;
 	}
 
-	// Controller Options / Start button pauses the game during gameplay
+
 	if (GameController.isOptionsPressed()) {
 		playClickSound();
 		currentGameState = STATE_PAUSE_MENU;
 		return;
 	}
-
-	// Pulsating haptic feedback during alarm / whistle countdown
-	GameController.setWhistlePulse(isCountdownActive);
 
 	updateGlobalTimer();
 	updateUIMessageTimer();
@@ -562,6 +666,7 @@ void fixedUpdate()
 		isCountdownActive = false;
 		stopAlarmSounds();
 		GameController.triggerPlayerDeath();
+		incrementDeathCount();
 		return;
 	}
 
@@ -579,6 +684,7 @@ void fixedUpdate()
 				GameController.stopVibration();
 				reduceMusicVolumeForLevelComplete();
 				spawnCoinBurst(level1Door.x + 25, level1Door.y + 35, 40);
+				updatePlayerScore(1, getCurrentDeathCount());
 				return;
 			}
 		}
@@ -595,6 +701,7 @@ void fixedUpdate()
 		checkLevel1ItemCollisions(Player.x, Player.y, playerSize);
 
 		if (wasBoxClosed && level1LootBox.isOpened) {
+			GameController.triggerLootBoxLooted();
 			isCountdownActive = true;
 			showUIMessage("ALARM TRIGGERED! Escape through the door now!", 400);
 			playAlarmSounds();
@@ -617,6 +724,7 @@ void fixedUpdate()
 				GameController.stopVibration();
 				reduceMusicVolumeForLevelComplete();
 				spawnCoinBurst(level2Door.x + 25, level2Door.y + 35, 40);
+				updatePlayerScore(2, getCurrentDeathCount());
 				return;
 			}
 		}
@@ -633,6 +741,7 @@ void fixedUpdate()
 		checkLevel2ItemCollisions(Player.x, Player.y, playerSize);
 
 		if (wasBoxClosed && level2LootBox.isOpened) {
+			GameController.triggerLootBoxLooted();
 			isCountdownActive = true;
 			showUIMessage("ALARM TRIGGERED! Escape through the roof exit!", 400);
 			playAlarmSounds();
@@ -655,6 +764,7 @@ void fixedUpdate()
 				GameController.stopVibration();
 				reduceMusicVolumeForLevelComplete();
 				spawnCoinBurst(level3Door.x + 25, level3Door.y + 35, 40);
+				updatePlayerScore(3, getCurrentDeathCount());
 				return;
 			}
 		}
@@ -671,13 +781,13 @@ void fixedUpdate()
 		checkLevel3ItemCollisions(Player.x, Player.y, playerSize);
 
 		if (wasBoxClosed && level3LootBox.isOpened) {
+			GameController.triggerLootBoxLooted();
 			isCountdownActive = true;
 			showUIMessage("ALARM TRIGGERED! Escape through the door now!", 400);
 			playAlarmSounds();
 		}
 
 		updateLevel3Logic();
-		// Only update key when in sublevel
 		if (playerInSubLevel) {
 			level3Key.update();
 		}
@@ -688,7 +798,7 @@ void fixedUpdate()
 	handlePlayerInput(groundY);
 }
 
-// Level 1 initialization
+
 void lvl1Initialize() {
 	currentLevel = 1;
 	totalGemsInLevel = gemCount;
@@ -725,7 +835,7 @@ void lvl1Initialize() {
 	initFloatingTexts();
 	resetScore();
 
-	countdownTimer = 50;
+	countdownTimer = 60;
 	isCountdownActive = false;
 	stopAlarmSounds();
 	GameController.stopVibration();
@@ -806,7 +916,7 @@ void lvl3Initialize() {
 		Player.gravity = -0.3f;
 	}
 
-	// Initialize appropriate level based on sublevel state
+
 	if (playerInSubLevel) {
 		level3SubMat();
 	} else {
@@ -817,7 +927,6 @@ void lvl3Initialize() {
 	updateLevel3Logic();
 
 	int px, py;
-	// Use appropriate spawn position based on development mode and checkpoint
 	extern const int LEVEL3_SPAWN_X;
 	extern const int LEVEL3_SPAWN_Y;
 	extern const int SUBLEVEL_SPAWN_X;
@@ -828,7 +937,6 @@ void lvl3Initialize() {
 	if (ENABLE_SUBLEVEL_DIRECTLY) {
 		GameCheckpoint.loadSpawnPoint(3, px, py, level3Key.isCollected, SUBLEVEL_SPAWN_X, SUBLEVEL_SPAWN_Y);
 	} else if (checkpointInSubLevel) {
-		// Spawn at sublevel checkpoint location
 		GameCheckpoint.loadSpawnPoint(3, px, py, level3Key.isCollected, PORTAL_TO_SUBLEVEL_X, PORTAL_TO_SUBLEVEL_Y);
 	} else {
 		GameCheckpoint.loadSpawnPoint(3, px, py, level3Key.isCollected, LEVEL3_SPAWN_X, LEVEL3_SPAWN_Y);
@@ -874,6 +982,10 @@ void lvl3Initialize() {
 
 void iLoadAllImages() {
 	loadCharacter();
+	loadMenuCharacterAnimation();
+
+	iGraphicsLogoImage = iLoadImage("Images/iGraphics.png");
+	shorovujStudioLogoImage = iLoadImage("Images/ShorovujStudio.png");
 
 	restartBtn = iLoadImage("Images/Buttons/restartBtn.png");
 	mainmenuBtn = iLoadImage("Images/Buttons/mainmenuBtn.png");
@@ -886,6 +998,18 @@ void iLoadAllImages() {
 	level1Btn = iLoadImage("Images/Buttons/level1Btn.png");
 	level2Btn = iLoadImage("Images/Buttons/level2Btn.png");
 	level3Btn = iLoadImage("Images/Buttons/level3Btn.png");
+	scoreboardBtnImage = iLoadImage("Images/Buttons/ScoreBoard.png");
+	aboutBtnImage = iLoadImage("Images/Buttons/About.png");
+	aboutPageImage = iLoadImage("Images/AboutPage.jpg");
+
+
+	nameWindowImage = iLoadImage("Images/Background/NameWindow.jpg");
+	namePlateImage = iLoadImage("Images/Background/NamePlate.png");
+	submitBtnImage = iLoadImage("Images/Buttons/Submit.png");
+	cancelBtnImage = iLoadImage("Images/Buttons/Cancel.png");
+
+
+	scoreboardBgImage = iLoadImage("Images/Background/bgScoreBoard.jpg");
 
 	redImage = iLoadImage("Images/red.png");
 	levelOne = iLoadImage("Images/Background/LevelOne.png");
@@ -909,7 +1033,7 @@ void iLoadAllImages() {
 	redSwitchImage = iLoadImage("Images/Utility/RedSwitch.png");
 	greenSwitchImage = iLoadImage("Images/Utility/GreenSwitch.png");
 	keyImage = iLoadImage("Images/Utility/Key.png");
-	keyReImage = iLoadImage("Images/Utility/KeyRe.png"); // Reversed key for sublevel
+	keyReImage = iLoadImage("Images/Utility/KeyRe.png");
 	closedBoxImage = iLoadImage("Images/Utility/ClosedBox.png");
 	openedBoxImage = iLoadImage("Images/Utility/OpenedBox.png");
 	closedDoorImage = iLoadImage("Images/Utility/ClosedDoor.png");
@@ -920,7 +1044,7 @@ void iLoadAllImages() {
 	soundOnImage = iLoadImage("Images/Utility/SoundOn.png");
 	soundOffImage = iLoadImage("Images/Utility/SoundOff.png");
 	portalImage = iLoadImage("Images/Utility/Portal.png");
-	portalReImage = iLoadImage("Images/Utility/PortalRe.png"); // Reversed portal for sublevel
+	portalReImage = iLoadImage("Images/Utility/PortalRe.png");
 	closedGateImage = iLoadImage("Images/Utility/ClosedGate.png");
 	openedGateImage = iLoadImage("Images/Utility/OpenedGate.png");
 
@@ -945,11 +1069,14 @@ int main()
 
 	iLoadAllImages();
 
-	// Ensure game starts cleanly on the Main Menu without active checkpoints
-	GameCheckpoint.clear();
-	currentGameState = STATE_MAIN_MENU; 
+	loadScoreboard();
 
-	iSetTimer(30, fixedUpdate); // Back to original timer speed
+	GameCheckpoint.clear();
+	introSoundPlayed = false;
+	currentGameState = STATE_STARTUP_SPLASH;
+	startupSplashStartedAtMs = glutGet(GLUT_ELAPSED_TIME);
+
+	iSetTimer(30, fixedUpdate);
 	iSetTimer(1000, countdown);
 
 	iStart();

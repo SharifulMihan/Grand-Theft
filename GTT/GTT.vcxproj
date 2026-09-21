@@ -72,12 +72,16 @@
     <ClInclude Include="Checkpoint.hpp" />
     <ClInclude Include="Controller.hpp" />
     <ClInclude Include="Effects.hpp" />
+    <ClInclude Include="FileHandler.hpp" />
     <ClInclude Include="lvl1.hpp" />
     <ClInclude Include="lvl2.hpp" />
     <ClInclude Include="lvl3.hpp" />
     <ClInclude Include="MainMenu.hpp" />
+    <ClInclude Include="MainMenuAnimation.hpp" />
     <ClInclude Include="MenuPage.hpp" />
+    <ClInclude Include="NameWindow.hpp" />
     <ClInclude Include="Obstacle.hpp" />
+    <ClInclude Include="ScoreBoard.hpp" />
     <ClInclude Include="Scoring.hpp" />
     <ClInclude Include="UI.hpp" />
     <ClInclude Include="Utility.hpp" />

@@ -128,10 +128,10 @@ static Platform level3MainPlatforms[] = {
 
 
 
-	Platform(710, 240, 15, 170, platformLvl3VertiImage),
-	Platform(790, 290, 20, 170, platformLvl3VertiImage),
-	Platform(870, 200, 15, 170, platformLvl3VertiImage),
-	Platform(940, 250, 15, 170, platformLvl3VertiImage),
+	Platform(710, 240, 25, 170, platformLvl3VertiImage),
+	Platform(790, 290, 25, 170, platformLvl3VertiImage),
+	Platform(870, 200, 20, 170, platformLvl3VertiImage),
+	Platform(940, 250, 20, 170, platformLvl3VertiImage),
 
 
 

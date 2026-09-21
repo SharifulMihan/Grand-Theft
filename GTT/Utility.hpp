@@ -8,11 +8,15 @@ extern int mat[720][1200];
 
 // game states
 enum GameState {
+	STATE_STARTUP_SPLASH,
 	STATE_MAIN_MENU,
 	STATE_PLAYING,
 	STATE_PAUSE_MENU,
 	STATE_LEVELS_MENU,
-	STATE_HOW_TO_PLAY
+	STATE_HOW_TO_PLAY,
+	STATE_ABOUT,
+	STATE_SCOREBOARD,
+	STATE_USERNAME_INPUT
 };
 
 extern GameState currentGameState;
@@ -83,7 +87,11 @@ void lvl1Initialize();
 void lvl2Initialize();
 void lvl3Initialize();
 
+// Forward declaration for death tracking (defined in FileHandler.hpp)
+void incrementDeathCount();
+
 inline void restartCurrentLevel() {
+	incrementDeathCount(); // Restarting counts as a death
 	if (currentLevel == 3) {
 		lvl3Initialize();
 	}
