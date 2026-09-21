@@ -2,6 +2,36 @@
 
 Grand Theft is a 2D action-platformer built in C++ with iGraphics/OpenGL. Play as a thief planning increasingly difficult heists: find the required key, unlock the loot box, survive the security system, and escape before the alarm timer reaches zero.
 
+## Screenshots
+
+### Main Menu and Player Profile
+
+<p align="center">
+  <img src="docs/screenshots/main-menu.png" alt="Grand Theft main menu" width="49%" />
+  <img src="docs/screenshots/player-name-entry.png" alt="Player name entry screen" width="49%" />
+</p>
+
+### Heist Gameplay
+
+<p align="center">
+  <img src="docs/screenshots/level-1-gameplay.png" alt="Level 1 gameplay" width="49%" />
+  <img src="docs/screenshots/level-2-gameplay.png" alt="Level 2 gameplay with lasers and cameras" width="49%" />
+</p>
+
+### Dimension Rift
+
+<p align="center">
+  <img src="docs/screenshots/level-3-rift.png" alt="Level 3 Dimension Rift entrance" width="49%" />
+  <img src="docs/screenshots/level-3-reversed-gravity.png" alt="Level 3 reversed-gravity sub-level" width="49%" />
+</p>
+
+### Leaderboard and Credits
+
+<p align="center">
+  <img src="docs/screenshots/leaderboard.png" alt="Level leaderboard" width="49%" />
+  <img src="docs/screenshots/credits.png" alt="Developer credits" width="49%" />
+</p>
+
 ## Game Concept
 
 Each level is a self-contained heist. The player navigates platforms and stairs while avoiding active security measures, collects optional cash, opens the secured loot box, and reaches the exit door. Opening the loot triggers an alarm and starts the escape countdown, turning the final route into a timed challenge.
@@ -80,36 +110,6 @@ GTT/
 ├── Images/            # Sprites, backgrounds, UI, and level assets
 └── Sound/             # Music and sound effects
 ```
-
-## Screenshots
-
-### Main Menu and Player Profile
-
-<p align="center">
-  <img src="docs/screenshots/main-menu.png" alt="Grand Theft main menu" width="49%" />
-  <img src="docs/screenshots/player-name-entry.png" alt="Player name entry screen" width="49%" />
-</p>
-
-### Heist Gameplay
-
-<p align="center">
-  <img src="docs/screenshots/level-1-gameplay.png" alt="Level 1 gameplay" width="49%" />
-  <img src="docs/screenshots/level-2-gameplay.png" alt="Level 2 gameplay with lasers and cameras" width="49%" />
-</p>
-
-### Dimension Rift
-
-<p align="center">
-  <img src="docs/screenshots/level-3-rift.png" alt="Level 3 Dimension Rift entrance" width="49%" />
-  <img src="docs/screenshots/level-3-reversed-gravity.png" alt="Level 3 reversed-gravity sub-level" width="49%" />
-</p>
-
-### Leaderboard and Credits
-
-<p align="center">
-  <img src="docs/screenshots/leaderboard.png" alt="Level leaderboard" width="49%" />
-  <img src="docs/screenshots/credits.png" alt="Developer credits" width="49%" />
-</p>
 
 ## Credits
 
