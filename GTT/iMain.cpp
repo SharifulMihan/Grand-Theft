@@ -1003,7 +1003,7 @@ void iLoadAllImages() {
 	aboutPageImage = iLoadImage("Images/AboutPage.jpg");
 
 
-	nameWindowImage = iLoadImage("Images/Background/NameWindow.jpg");
+	nameWindowImage = iLoadImage("Images/Background/NameWindow.png");
 	namePlateImage = iLoadImage("Images/Background/NamePlate.png");
 	submitBtnImage = iLoadImage("Images/Buttons/Submit.png");
 	cancelBtnImage = iLoadImage("Images/Buttons/Cancel.png");
