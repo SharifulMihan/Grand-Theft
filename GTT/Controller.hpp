@@ -245,9 +245,8 @@ public:
 		return false;
 	}
 
-	// -------------------------------------------------------------
+	
 	// Haptic Vibration System
-	// -------------------------------------------------------------
 	void triggerHaptic(float duration, WORD leftMotor, WORD rightMotor) {
 		hapticTimer = duration;
 		hapticLeftMotor = leftMotor;
@@ -292,7 +291,7 @@ private:
 	}
 
 	void updateHaptics(float dt) {
-		// One-shot event vibrations (cash, key, loot box, or death).
+		// One-shot event vibrations
 		if (hapticTimer > 0.0f) {
 			hapticTimer -= dt;
 			if (hapticTimer <= 0.0f) {
@@ -311,4 +310,4 @@ private:
 
 extern ControllerManager GameController;
 
-#endif // CONTROLLER_HPP
+#endif 

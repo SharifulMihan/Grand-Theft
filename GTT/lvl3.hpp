@@ -34,38 +34,28 @@ extern int lvl3BgImage;
 extern int bgSubLvl3Image;
 extern Character Player;
 
-// ============================================================================
-// LEVEL 3 SPAWN POSITION - EASY TO MODIFY
-// ============================================================================
-// Change these values to set where the player spawns at the start of Level 3
-const int LEVEL3_SPAWN_X = 20;   // Starting X position (horizontal)
-const int LEVEL3_SPAWN_Y = 422;  // Starting Y position (vertical)
 
-// ============================================================================
-// PORTAL TELEPORTATION COORDINATES - EASY TO MODIFY
-// ============================================================================
-// Change these values to set where the player spawns when using portals
-const int PORTAL_TO_SUBLEVEL_X = 1100;  // X position when entering sublevel
-const int PORTAL_TO_SUBLEVEL_Y = 570;   // Y position when entering sublevel
-const int PORTAL_TO_MAIN_X = 570;      // X position when returning to main level 480, 238,
-const int PORTAL_TO_MAIN_Y = 250;       // Y position when returning to main level
+const int LEVEL3_SPAWN_X = 20;   
+const int LEVEL3_SPAWN_Y = 422; 
 
-// ============================================================================
-// DEVELOPMENT MODE - DIRECT SUBLEVEL ACCESS
-// ============================================================================
-// Set this to true to directly start in the sublevel without using the portal
-// Set this to false for normal gameplay (start in main level, use portal to access sublevel)
+
+const int PORTAL_TO_SUBLEVEL_X = 1100;  
+const int PORTAL_TO_SUBLEVEL_Y = 570;   
+const int PORTAL_TO_MAIN_X = 570;      
+const int PORTAL_TO_MAIN_Y = 250;       
+
+
 const bool ENABLE_SUBLEVEL_DIRECTLY = false;
 
-// Sublevel spawn position (when ENABLE_SUBLEVEL_DIRECTLY is true)
-const int SUBLEVEL_SPAWN_X = 1100;  // Top right spawn in sublevel
-const int SUBLEVEL_SPAWN_Y = 570;  // Top right spawn in sublevel
 
-// Custom Checkpoint Coordinates for Level 3
+const int SUBLEVEL_SPAWN_X = 1100;  
+const int SUBLEVEL_SPAWN_Y = 570;  
+
+
 int lvl3CheckpointX = 650;
 int lvl3CheckpointY = 300;
 
-// Portal structure for teleportation mechanism
+
 struct Portal {
 	int x, y, w, h;
 	bool isActive;
@@ -106,23 +96,18 @@ Portal level3Portal(480, 238, 50, 70);
 // Return Portal (sublevel)
 Portal level3ReturnPortal(50, 430, 50, 70, true);
 
-// ============================================================================
-// MAIN LEVEL PLATFORMS (Redesigned layout)
-// ============================================================================
+
 static Platform level3MainPlatforms[] = {
-	// Main ground platform
 	Platform(0, 400, 200, 20, platformLvl3HoriImage),
 	
 	
 	
-	
-	// Vertical platforms for climbing
-	Platform(260, 200, 60, 240, platformLvl3VertiImage),    // Vertical connector
-	Platform(370, 150, 40, 340, platformLvl3VertiImage),    // Vertical connector
+	Platform(260, 200, 60, 240, platformLvl3VertiImage),    
+	Platform(370, 150, 40, 340, platformLvl3VertiImage),   
 	Platform(460, 490, 40, 300, platformLvl3VertiImage),
 
 	Platform(460, 360, 200, 20, platformLvl3HoriImage),
-	Platform(460, 220, 200, 20, platformLvl3HoriImage), // portal platform
+	Platform(460, 220, 200, 20, platformLvl3HoriImage), 
 	Platform(700, 140, 200, 20, platformLvl3HoriImage),
 
 
@@ -141,11 +126,9 @@ static Platform level3MainPlatforms[] = {
 };
 const int platform3MainCount = sizeof(level3MainPlatforms) / sizeof(level3MainPlatforms[0]);
 
-// ============================================================================
-// SUB LEVEL PLATFORMS (accessible through portal) - REVERSED GRAVITY DESIGN
-// ============================================================================
+// SUB LEVEL PLATFORMS
 static Platform level3SubPlatforms[] = {
-	// Ceiling platform (acts as ground in reversed gravity)
+	
 	Platform(0, 700, 1200, 120, platformSubLvl3HoriImage),
 	
 	// Starting platform near spawn (top right)
@@ -159,32 +142,26 @@ static Platform level3SubPlatforms[] = {
 	// Vertical platforms for climbing between levels
 	Platform(170, 450, 20, 200, platformSubLvl3VertiImage),
 	Platform(570, 450, 30, 250, platformSubLvl3VertiImage),
-	//Platform(850, 250, 20, 300, platformSubLvl3VertiImage),
 	
-	// Platform near return portal (bottom left area)
 	Platform(50, 500, 50, 20, platformSubLvl3HoriImage),
 };
 const int platform3SubCount = sizeof(level3SubPlatforms) / sizeof(level3SubPlatforms[0]);
 
-// ============================================================================
-// STAIRS
-// ============================================================================
+
 // Main level stairs
 static Stair level3Stairs[] = {
-	//{ 200, 150, 50, 130 },
 	{ 660, 140, 40, 240 },
 };
 const int stair3Count = sizeof(level3Stairs) / sizeof(level3Stairs[0]);
 
-// Sub level stairs (separate for editing sublevel independently)
+// Sub level stairs
 static Stair level3SubStairs[] = {
 	{ 910, 550, 40, 150 }
 };
 const int stair3SubCount = sizeof(level3SubStairs) / sizeof(level3SubStairs[0]);
 
-// ============================================================================
+
 // MAIN LEVEL OBSTACLES
-// ============================================================================
 static Laser level3Lasers[] = {
 	Laser(2000, 3015, 80, 8, 300, 400, 1.5),
 	
@@ -215,9 +192,7 @@ static Gem level3Gems[] = {
 };
 const int gem3Count = sizeof(level3Gems) / sizeof(level3Gems[0]);
 
-// ============================================================================
 // SUB LEVEL OBSTACLES (separate from main level)
-// ============================================================================
 static Laser level3SubLasers[1] = {Laser(0, 0, 0, 0, 0, 0, 0)};
 const int laser3SubCount = 0;
 
@@ -233,13 +208,11 @@ const int camera3SubCount = 0;
 static Gem level3SubGems[1] = {Gem(0, 0)};
 const int gem3SubCount = 0;
 
-// ============================================================================
 // SWITCH, LIFT, KEY, LOOTBOX, DOOR
-// ============================================================================
 static TriggerSwitch level3Switch(50, 5600, 30, 30);
 static MovableLift   level3Lift(400, 5060, 100, 15, 400, 1.5);
-static Key     level3Key(250, 370, 35, 25);  // Key in sub-level (on bottom platform)
-static LootBox level3LootBox(800, 160, 40, 40);  // Lootbox in main level (near portal)
+static Key     level3Key(250, 370, 35, 25);  
+static LootBox level3LootBox(800, 160, 40, 40);
 static Door    level3Door(1130, 460, 50, 70);
 
 // Player position tracking for portal teleportation
@@ -251,10 +224,7 @@ extern bool playerInSubLevel;
 extern bool reversedGravity;
 
 
-
-// ============================================================================
 // BIT-MASKING FOR MAIN LEVEL
-// ============================================================================
 void level3MainMat() {
 	for (int row = 0; row < 720; row++)
 	for (int col = 0; col < 1200; col++)
@@ -279,9 +249,8 @@ void level3MainMat() {
 	level3Switch.writeToMatrix();
 }
 
-// ============================================================================
+
 // BIT-MASKING FOR SUB LEVEL
-// ============================================================================
 void level3SubMat() {
 	for (int row = 0; row < 720; row++)
 	for (int col = 0; col < 1200; col++)
@@ -302,9 +271,9 @@ void level3SubMat() {
 	}
 }
 
-// ============================================================================
+
+
 // UPDATE
-// ============================================================================
 void updateLevel3Logic() {
 	level3Lift.update(level3Switch.activated);
 	if (level3Lift.hasMoved) {
@@ -335,23 +304,23 @@ void updateLevel3Logic() {
 	}
 }
 
-// ============================================================================
+
+
 // ITEM COLLISIONS
-// ============================================================================
 void checkLevel3ItemCollisions(int px, int py, int pSize) {
 	// Check portal collision based on current level
 	if (!playerInSubLevel) {
-		// Only check main level portal when in main level
+		
 		if (level3Portal.checkCollision(px, py, pSize)) {
 			// Teleport to sub-level
 			playerInSubLevel = true;
 			level3Portal.isInSubLevel = true;
 			reversedGravity = true; // Enable reversed gravity
 			Player.gravity = 0.3f; // Set player gravity to reversed
-			Player.x = PORTAL_TO_SUBLEVEL_X; // Use portal spawn coordinates
-			Player.y = PORTAL_TO_SUBLEVEL_Y;  // Use portal spawn coordinates
-			Player.vy = 0; // Reset velocity
-			Player.isJumping = false; // Reset jump state
+			Player.x = PORTAL_TO_SUBLEVEL_X;
+			Player.y = PORTAL_TO_SUBLEVEL_Y;
+			Player.vy = 0;
+			Player.isJumping = false;
 			level3SubMat();
 			spawnFloatingText(500, 400, "GRAVITY REVERSED!", 150, 100, 255);
 			playPointSound();
@@ -364,17 +333,17 @@ void checkLevel3ItemCollisions(int px, int py, int pSize) {
 				// Return to main level
 				playerInSubLevel = false;
 				level3Portal.isInSubLevel = false;
-				reversedGravity = false; // Restore normal gravity
-				Player.gravity = -0.3f; // Set player gravity to normal
-				Player.x = PORTAL_TO_MAIN_X; // Use portal return coordinates
-				Player.y = PORTAL_TO_MAIN_Y;  // Use portal return coordinates
-				Player.vy = 0; // Reset velocity
-				Player.isJumping = false; // Reset jump state
+				reversedGravity = false;
+				Player.gravity = -0.3f;
+				Player.x = PORTAL_TO_MAIN_X;
+				Player.y = PORTAL_TO_MAIN_Y;
+				Player.vy = 0;
+				Player.isJumping = false;
 				level3MainMat();
 				spawnFloatingText(500, 400, "GRAVITY RESTORED!", 100, 255, 150);
 				playPointSound();
 			} else {
-				// Key not collected, show message
+				
 				spawnFloatingText(500, 400, "COLLECT THE KEY FIRST!", 255, 100, 100);
 			}
 		}
@@ -430,9 +399,8 @@ void checkLevel3ItemCollisions(int px, int py, int pSize) {
 	}
 }
 
-// ============================================================================
+
 // OBSTACLE COLLISIONS
-// ============================================================================
 bool checkLevel3LaserCollision(int px, int py, int pSize) {
 	if (playerInSubLevel) {
 		for (int i = 0; i < laser3SubCount; i++)
@@ -477,9 +445,9 @@ bool checkLevel3CameraCollision(int px, int py, int pSize) {
 	return false;
 }
 
-// ============================================================================
+
+
 // RENDER
-// ============================================================================
 void drawLevel3() {
 	// Draw different background based on level
 	if (playerInSubLevel) {
@@ -509,12 +477,12 @@ void drawLevel3() {
 		}
 	}
 
-	// Draw switch (only in main level)
+	// Draw switch
 	if (!playerInSubLevel) {
 		level3Switch.draw();
 	}
 
-	// Draw gems, cameras, obstacles based on current level
+	// Draw gems, cameras, obstacles
 	if (playerInSubLevel) {
 		// Draw sublevel elements
 		for (int i = 0; i < gem3SubCount; i++) level3SubGems[i].draw();
@@ -531,12 +499,12 @@ void drawLevel3() {
 		for (int i = 0; i < cutter3Count; i++) level3Cutters[i].draw();
 	}
 
-	// Draw key (only in sub-level)
+	// Draw key
 	if (playerInSubLevel) {
 		level3Key.draw();
 	}
 
-	// Draw lootbox and door (only in main level)
+	// Draw lootbox and door
 	if (!playerInSubLevel) {
 		level3LootBox.draw();
 		level3Door.draw();
@@ -546,7 +514,7 @@ void drawLevel3() {
 	if (!playerInSubLevel) {
 		level3Portal.draw();
 	} else {
-		// Draw return portal in sub-level
+		// Draw return portal
 		level3ReturnPortal.draw();
 	}
 }

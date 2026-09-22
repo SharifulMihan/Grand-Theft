@@ -21,8 +21,6 @@ inline void handleUsernameInputController();
 
 
 
-
-// Forward declaration for keyPressed array from iGraphics.h
 extern unsigned int keyPressed[512];
 
 extern int menubackgroundImage;
